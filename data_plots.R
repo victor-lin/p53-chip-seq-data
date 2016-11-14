@@ -146,3 +146,31 @@ plot_matrix_score_hist <- function(rep_cut) {
     return(p)
 }
 
+plot_anno_cat_hist <- function(rep_cut) {
+    if (!missing(rep_cut)) {
+        p <- plot_base(rep_cut)
+    }
+    else {
+        p <- plot_base()
+    }
+    p <- p +
+         geom_bar(aes(x=reorder(Annotation.Category,
+                                Annotation.Category,
+                                function(x)-length(x)))) +
+         xlab("Annotation Category") +
+         theme(axis.text.x=element_text(angle=45, hjust=1))
+    return(p)
+}
+
+plot_anno_cat_vs_rep <- function() {
+    p <- plot_base() +
+         geom_point(aes(x=reorder(Annotation.Category,
+                                  Annotation.Category,
+                                  function(x)-length(x)),
+                        y=Repeats)) +
+         xlab("Annotation Category") +
+         ylab("% Repeats") +
+         theme(axis.text.x=element_text(angle=45, hjust=1)) +
+         scale_y_continuous(labels=scales::percent)
+    return(p)
+}
