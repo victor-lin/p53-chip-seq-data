@@ -28,6 +28,25 @@ def n_prop(record):
     return 1.0 * n_count / len(record)
 
 
+def anno_category(s):
+    """Return annotation category from detailed annotation.
+    Assumes each detailed annotation has only one category name
+    unless one is followed by a parenthesis.
+    If so, return the category before the parenthesis.
+    """
+    repeats = {'RNA', 'Simple_repeat', 'Satellite', 'SINE',
+               'Low_complexity', 'LTR', 'LINE', 'DNA'}
+    non_repeats = {'TSS', 'TTS', 'exon', "5' UTR", "3' UTR",
+                   'CpG', 'intron', 'Intergenic', 'non-coding'}
+    other = {'Other', 'Unknown'}
+    lp_idx = s.find('(')
+    if lp_idx > 0:
+        s = s[:lp_idx]
+    for cat in (repeats | non_repeats | other):
+        if cat in s:
+            return cat
+
+# get peaks
 peaks = pd.read_table(options.merged_file,
                       header=None, names=("chr", "start", "end"))
 samples = pd.read_table(options.samples_file)
@@ -35,9 +54,10 @@ samples.rename(columns={col: 'sample_' + col
                         for col in ('chr', 'start', 'end', 'length')},
                inplace=True)
 
+# table DataFrame
 tbl = peaks
-for s in set(samples.Sample_Name):
-    tbl[s] = None
+for sample_name in set(samples.Sample_Name):
+    tbl[sample_name] = None
 
 merged_samples = sqldf("""SELECT *
                           FROM peaks AS p
@@ -61,11 +81,14 @@ anno = pd.read_table(options.anno_file)
 anno = anno[['Chr', 'Start', 'End',
              'Detailed Annotation', 'Gene Name']].sort(['Chr', 'Start', 'End'])
 tbl['Detailed Annotation'] = anno['Detailed Annotation']
+tbl['Annotation Category'] = tbl['Detailed Annotation'].apply(anno_category)
 tbl['Gene Name'] = anno['Gene Name']
 
+# aggregate samples by regions
 grouped_samples = grouped.agg({'MACS_Score': max,
                                'fold_enrichment': max}).reset_index()
 
+# aggregate matrices by regions
 mast_out = pd.read_table(options.mast_file)
 mast_out['matrix_score'] = -log10(mast_out['hit_p.value'])
 merged_mast = sqldf("""SELECT *, mo.ROWID AS matrix_id
