@@ -117,7 +117,10 @@ table2.rename(columns={'matrix_score': 'Max Matrix Score',
                        'fold_enrichment': 'Max Fold Enrichment'},
               inplace=True)
 
-table2['Repeats'] = [n_prop(seq_record) for seq_record
-                     in SeqIO.parse(options.fasta_file, "fasta")]
+table2['Repeat Count'] = [seq_record.seq.count('N') for seq_record
+                          in SeqIO.parse(options.fasta_file, "fasta")]
+table2['Length'] = [len(seq_record) for seq_record
+                    in SeqIO.parse(options.fasta_file, "fasta")]
+table2['Repeat Proportion'] = 1.0 * table2['Repeat Count'] / table2['Length']
 
 table2.to_csv(options.out_file, sep="\t", index=False)

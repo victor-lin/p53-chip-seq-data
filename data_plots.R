@@ -3,7 +3,7 @@ message("Choose master table file")
 master_table <- read.delim(file.choose())
 
 add_rep_status <- function(master_table, rep_cutoff) {
-    master_table$Repeat.Status <- factor(round(master_table$Repeats
+    master_table$Repeat.Status <- factor(round(master_table$Repeat.Proportion
                                                - rep_cutoff + 0.5))
     return(master_table)
 }
@@ -36,7 +36,7 @@ get_num_high_matrix <- function(matrix_cut) {
 get_num_rep_and_high_matrix <- function(rep_cut, matrix_cut) {
     matrix_scores <- master_table[!is.na(master_table$Max.Matrix.Score)
                                   & master_table$Max.Matrix.Score >= matrix_cut, ]
-    reps <- master_table[master_table$Repeats >= rep_cut, ]
+    reps <- master_table[master_table$Repeat.Proportion >= rep_cut, ]
     rep_and_matrix <- merge(matrix_scores, reps)
     return(nrow(rep_and_matrix))
 }
@@ -71,7 +71,7 @@ plot_macs_vs_matrix <- function() {
     p <- plot_base()
     p <- p +
          geom_point(aes(Max.MACS.Score, Max.Matrix.Score,
-                        color=Repeats)) +
+                        color=Repeat.Proportion)) +
          xlab("Max MACS Score") +
          ylab("Max Matrix Score") +
          scale_colour_gradient(name="% Repeats",
@@ -84,7 +84,7 @@ plot_fe_vs_matrix <- function() {
     p <- plot_base()
     p <- p +
          geom_point(aes(Max.Fold.Enrichment, Max.Matrix.Score,
-                        color=Repeats)) +
+                        color=Repeat.Proportion)) +
          xlab("Max Fold Enrichment") +
          ylab("Max Matrix Score") +
          scale_colour_gradient(name="% Repeats",
@@ -97,7 +97,7 @@ plot_macs_vs_fe <- function() {
     p <- plot_base()
     p <- p +
          geom_point(aes(Max.MACS.Score, Max.Fold.Enrichment,
-                        color=Repeats)) +
+                        color=Repeat.Proportion)) +
          xlab("Max MACS Score") +
          ylab("Max Fold Enrichment") +
          scale_colour_gradient(name="% Repeats",
@@ -167,10 +167,17 @@ plot_anno_cat_vs_rep <- function() {
          geom_point(aes(x=reorder(Annotation.Category,
                                   Annotation.Category,
                                   function(x)-length(x)),
-                        y=Repeats)) +
+                        y=Repeat.Proportion)) +
          xlab("Annotation Category") +
          ylab("% Repeats") +
          theme(axis.text.x=element_text(angle=45, hjust=1)) +
          scale_y_continuous(labels=scales::percent)
+    return(p)
+}
+
+plot_num_repeat_vs_length <- function() {
+    p <- plot_base() +
+         geom_point(aes(x=Repeat.Count, y=Length,
+                        color=Repeat.Proportion))
     return(p)
 }
