@@ -146,6 +146,28 @@ plot_matrix_score_hist <- function(rep_cut) {
     return(p)
 }
 
+plot_macs_score_hist <- function(rep_cut) {
+    if (!missing(rep_cut)) {
+        p <- plot_base(rep_cut)
+    }
+    else {
+        p <- plot_base()
+    }
+    p <- p +
+         geom_histogram(aes(x=Max.MACS.Score), binwidth=100) +
+         xlab("Max MACS Score") +
+         scale_x_continuous(limits=c(50, NA))
+    return(p)
+}
+
+plot_rep_count_hist <- function() {
+    p <- plot_base() +
+         geom_histogram(aes(x=Repeat.Count), binwidth=50) +
+         xlab("Repeat Count") +
+         ylab("Frequency")
+    return(p)
+}
+
 plot_anno_cat_hist <- function(rep_cut) {
     if (!missing(rep_cut)) {
         p <- plot_base(rep_cut)
@@ -175,9 +197,21 @@ plot_anno_cat_vs_rep <- function() {
     return(p)
 }
 
-plot_num_repeat_vs_length <- function() {
+plot_rep_count_vs_length <- function() {
     p <- plot_base() +
          geom_point(aes(x=Repeat.Count, y=Length,
-                        color=Repeat.Proportion))
+                        color=Repeat.Proportion)) +
+         xlab("Repeat Count") +
+         ylab("Peak Length")
+    return(p)
+}
+
+plot_rep_count_vs_length_box <- function() {
+    p <- plot_base() +
+         geom_boxplot(aes(x=Repeat.Count, y=Length,
+                          group=cut_width(Repeat.Count,
+                                          width=500))) +
+         xlab("Repeat Count") +
+         ylab("Peak Length")
     return(p)
 }
