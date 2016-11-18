@@ -215,3 +215,19 @@ plot_rep_count_vs_length_box <- function() {
          ylab("Peak Length")
     return(p)
 }
+
+plot_sample_anno_distribution <- function() {
+    message("Choose summary annotation file")
+    anno_summary <- read.delim(file.choose())
+    require(RColorBrewer)
+    getPalette <- colorRampPalette(brewer.pal(9, "Set1"))
+    cat_ct = length(unique(anno_summary$Annotation.Category))
+    p <- ggplot(data=anno_summary) +
+         geom_bar(aes(x=Sample.Name, fill=Annotation.Category),
+                  position = "fill") +
+         theme(axis.text.x=element_text(angle=45, hjust=1)) +
+         scale_fill_manual(values=getPalette(cat_ct)) +
+         xlab("Sample Name") +
+         ylab("Frequency")
+    return(p)
+}

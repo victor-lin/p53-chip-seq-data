@@ -3,7 +3,7 @@ option_list = list(
     make_option("--bed_directory", type="character", default=NULL,
                 help="BED files directory", metavar="character"),
     make_option(c("-o", "--out_file"), type="character", default=NULL,
-                help="output file name", metavar="character"),
+                help="output filepath", metavar="character"),
     make_option("--fe_directory", type="character", default=NULL,
                 help="FE files directory", metavar="character"),
     make_option("--ignore", type="character", default=NULL,
