@@ -56,16 +56,15 @@ samples.rename(columns={col: 'sample_' + col
 
 # table DataFrame
 tbl = peaks
+merged_samples = sqldf("""SELECT *
+                            FROM peaks AS p
+                            JOIN samples AS s
+                                 ON (s.sample_start >= p.start
+                                     AND s.sample_end <= p.end)""", globals())
+grouped = merged_samples.groupby(['chr', 'start', 'end'])
+tbl['Sample Count'] = grouped.count()['Sample_Name'].values
 for sample_name in set(samples.Sample_Name):
     tbl[sample_name] = None
-
-merged_samples = sqldf("""SELECT *
-                          FROM peaks AS p
-                          JOIN samples AS s
-                               ON (s.sample_start >= p.start
-                                   AND s.sample_end <= p.end)""", globals())
-grouped = merged_samples.groupby(['chr', 'start', 'end'])
-
 ct = 0
 for table_i, row in tbl.iterrows():
     print table_i,

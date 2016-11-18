@@ -3,6 +3,8 @@
 import argparse
 import subprocess
 import os
+import pandas as pd
+
 
 parser = argparse.ArgumentParser(description='Create P53 figures')
 parser.add_argument('-v', '--valid',
@@ -25,8 +27,8 @@ merged_file = os.path.join(etc_dir, 'MACSscore_summary_valid_merged.bed')
 anno_file = os.path.join(etc_dir, 'MACSscore_summary_valid_merged.anno')
 
 # results/
-master_table_macs = os.path.join(result_dir, 'master_table_macs.txt')
-master_table_fe = os.path.join(result_dir, 'master_table_fe.txt')
+master_table_macs_maxmat = os.path.join(result_dir, 'ChIP_master_table_macs_maxmat.txt')
+master_table_fe_maxmat = os.path.join(result_dir, 'ChIP_master_table_fe_maxmat.txt')
 
 r_cmd = 'Rscript'
 r_concat_sample_beds = 'concat_sample_beds.R'
@@ -59,5 +61,17 @@ def generate_master_table(out_fpath, sample_col='macs'):
     subprocess.call(['python', '-u', py_master_table] + mt_args)
 
 if __name__ == '__main__':
-    generate_master_table(master_table_macs, 'macs')
-    generate_master_table(master_table_fe, 'fe')
+    generate_master_table(master_table_macs_maxmat, 'macs')
+    generate_master_table(master_table_fe_maxmat, 'fe')
+
+    mt_macs = pd.read_table(master_table_macs_maxmat)
+    mt_fe = pd.read_table(master_table_fe_maxmat)
+
+    mt_macs[mt_macs["Sample Count"] > 1].to_csv('ChIP_master_table_intersect_macs.txt',
+                                                sep='\t', index=False)
+    mt_fe[mt_fe["Sample Count"] > 1].to_csv('ChIP_master_table_intersect_fe.txt',
+                                            sep='\t', index=False)
+    mt_macs[mt_macs["Max Matrix Score"] > 6].to_csv('ChIP_master_table_macs_6mat.txt',
+                                                    sep='\t', index=False)
+    mt_fe[mt_fe["Max Matrix Score"] > 6].to_csv('ChIP_master_table_fe_6mat.txt',
+                                                sep='\t', index=False)
