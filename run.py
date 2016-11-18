@@ -1,14 +1,9 @@
 #!/usr/bin/env python
 
-import argparse
 import subprocess
 import os
 import pandas as pd
 
-
-parser = argparse.ArgumentParser(description='Create P53 figures')
-parser.add_argument('-v', '--valid',
-                    help='filter for valid samples')
 
 # base dir
 base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -17,7 +12,7 @@ etc_dir = os.path.join(base_dir, 'etc')
 result_dir = os.path.join(base_dir, 'results')
 
 # data/
-sample_beds_dir = os.path.join(data_dir, 'ValidSamples')
+sample_beds_dir = os.path.join(data_dir, 'SampleBEDs')
 mast_out = os.path.join(data_dir, 'mast_out.bed')
 target_fasta = os.path.join(data_dir, 'target.fa')
 
