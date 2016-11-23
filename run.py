@@ -24,8 +24,13 @@ anno_file = os.path.join(etc_dir, 'MACSscore_summary_valid_merged.anno')
 sample_annos_file = os.path.join(etc_dir, 'all_samples.anno')
 
 # results/
-master_table_macs_maxmat = os.path.join(result_dir, 'ChIP_master_table_macs_maxmat.txt')
-master_table_fe_maxmat = os.path.join(result_dir, 'ChIP_master_table_fe_maxmat.txt')
+mt_name = 'ChIP_master_table_{}_{}.txt'
+mt_macs_maxmat = os.path.join(result_dir, mt_name.format('macs', 'maxmat'))
+mt_fe_maxmat = os.path.join(result_dir, mt_name.format('fe', 'maxmat'))
+mt_macs_intersect = os.path.join(result_dir, mt_name.format('macs', 'intersect'))
+mt_fe_intersect = os.path.join(result_dir, mt_name.format('fe', 'intersect'))
+mt_macs_6mat = os.path.join(result_dir, mt_name.format('macs', '6mat'))
+mt_fe_6mat = os.path.join(result_dir, mt_name.format('fe', '6mat'))
 
 r_cmd = 'Rscript'
 r_concat_sample_beds = 'concat_sample_beds.R'
@@ -67,17 +72,17 @@ def generate_master_table(out_fpath, sample_col='macs'):
 
 if __name__ == '__main__':
     setup()
-    generate_master_table(master_table_macs_maxmat, 'macs')
-    generate_master_table(master_table_fe_maxmat, 'fe')
+    generate_master_table(mt_macs_maxmat, 'macs')
+    generate_master_table(mt_fe_maxmat, 'fe')
 
-    mt_macs = pd.read_table(master_table_macs_maxmat)
-    mt_fe = pd.read_table(master_table_fe_maxmat)
+    mt_macs = pd.read_table(mt_macs_maxmat)
+    mt_fe = pd.read_table(mt_fe_maxmat)
 
-    mt_macs[mt_macs["Sample Count"] > 1].to_csv('ChIP_master_table_intersect_macs.txt',
+    mt_macs[mt_macs["Sample Count"] > 1].to_csv(mt_macs_intersect,
                                                 sep='\t', index=False)
-    mt_fe[mt_fe["Sample Count"] > 1].to_csv('ChIP_master_table_intersect_fe.txt',
+    mt_fe[mt_fe["Sample Count"] > 1].to_csv(mt_fe_intersect,
                                             sep='\t', index=False)
-    mt_macs[mt_macs["Max Matrix Score"] > 6].to_csv('ChIP_master_table_macs_6mat.txt',
+    mt_macs[mt_macs["Max Matrix Score"] > 6].to_csv(mt_macs_6mat,
                                                     sep='\t', index=False)
-    mt_fe[mt_fe["Max Matrix Score"] > 6].to_csv('ChIP_master_table_fe_6mat.txt',
+    mt_fe[mt_fe["Max Matrix Score"] > 6].to_csv(mt_fe_6mat,
                                                 sep='\t', index=False)
