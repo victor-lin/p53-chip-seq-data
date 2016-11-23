@@ -45,7 +45,7 @@ def generate_master_table(options):
     grouped = merged_samples.groupby(['chr', 'start', 'end'])
     tbl['Sample Count'] = grouped.count()['Sample_Name'].values
     for sample_name in set(samples.Sample_Name):
-        tbl[sample_name] = None
+        tbl[sample_name] = 0
 
     for table_i, row in tbl.iterrows():
         sys.stdout.write('\rUpdating columns for row {}'.format(table_i + 1))
