@@ -210,7 +210,9 @@ plot_rep_count_vs_length_box <- function() {
     p <- plot_base() +
          geom_boxplot(aes(x=Repeat.Count, y=Length,
                           group=cut_width(Repeat.Count,
-                                          width=500))) +
+                                          width=500,
+                                          boundary=1,
+                                          closed="left"))) +
          xlab("Repeat Count") +
          ylab("Peak Length")
     return(p)
