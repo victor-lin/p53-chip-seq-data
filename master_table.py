@@ -1,3 +1,4 @@
+import sys
 import pandas as pd
 from pandasql import sqldf
 from optparse import OptionParser
@@ -47,18 +48,20 @@ def generate_master_table(options):
         tbl[sample_name] = None
 
     for table_i, row in tbl.iterrows():
-        print table_i,
+        sys.stdout.write('\rUpdating columns for row {}'.format(table_i + 1))
+        sys.stdout.flush()
         key = tuple(list(row.values)[:3])
         group = grouped.get_group(key)
-        for i, s in enumerate(group["Sample_Name"]):
+        for i, s in enumerate(group['Sample_Name']):
             if options.sample_col == 'macs':
-                tbl.loc[table_i, s] = group["MACS_Score"].iloc[i]
+                tbl.loc[table_i, s] = group['MACS_Score'].iloc[i]
             elif options.sample_col == 'fe':
-                tbl.loc[table_i, s] = group["fold_enrichment"].iloc[i]
+                tbl.loc[table_i, s] = group['fold_enrichment'].iloc[i]
+    print
 
     anno = pd.read_table(options.anno_file)
     anno = anno[['Chr', 'Start', 'End',
-                 'Detailed Annotation', 'Gene Name']].sort(['Chr', 'Start', 'End'])
+                 'Detailed Annotation', 'Gene Name']].sort_values(by=['Chr', 'Start', 'End'])
     tbl['Detailed Annotation'] = anno['Detailed Annotation']
     tbl['Annotation Category'] = tbl['Detailed Annotation'].apply(anno_category)
     tbl['Gene Name'] = anno['Gene Name']
@@ -97,9 +100,9 @@ def generate_master_table(options):
                   inplace=True)
 
     table2['Repeat Count'] = [seq_record.seq.count('N') for seq_record
-                              in SeqIO.parse(options.fasta_file, "fasta")]
+                              in SeqIO.parse(options.fasta_file, 'fasta')]
     table2['Length'] = [len(seq_record) for seq_record
-                        in SeqIO.parse(options.fasta_file, "fasta")]
+                        in SeqIO.parse(options.fasta_file, 'fasta')]
     table2['Repeat Proportion'] = 1.0 * table2['Repeat Count'] / table2['Length']
 
     table2.to_csv(options.out_file, sep="\t", index=False)
