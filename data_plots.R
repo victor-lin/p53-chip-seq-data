@@ -168,6 +168,21 @@ plot_rep_count_hist <- function() {
     return(p)
 }
 
+plot_rep_percent_hist <- function(breaks) {
+    p <- plot_base()
+    if (missing(breaks)) {
+        p <- p + geom_histogram(aes(x=Repeat.Proportion * 100), binwidth=1)
+    }
+    else {
+        p <- p + geom_histogram(aes(x=Repeat.Proportion * 100),
+                                breaks=breaks, fill="white", color="black")
+    }
+    p <- p +
+         xlab("Repeat Percent") +
+         ylab("Frequency")
+    return(p)
+}
+
 plot_anno_cat_hist <- function(rep_cut) {
     if (!missing(rep_cut)) {
         p <- plot_base(rep_cut)
