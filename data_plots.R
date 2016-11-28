@@ -169,15 +169,19 @@ plot_rep_count_hist <- function() {
 }
 
 plot_rep_percent_hist <- function(breaks) {
+    # args:
+    #   breaks: intervals for repeat percent.
+    #           ex. c(0,1,50,90,100)
     p <- plot_base()
     if (missing(breaks)) {
-        p <- p + geom_histogram(aes(x=Repeat.Proportion * 100), binwidth=1)
+        p <- p + geom_histogram(aes(x=Repeat.Proportion), binwidth=.01)
     }
     else {
-        p <- p + geom_histogram(aes(x=Repeat.Proportion * 100),
-                                breaks=breaks, fill="white", color="black")
+        p <- p + geom_histogram(aes(x=Repeat.Proportion),
+                                breaks=breaks / 100, fill="white", color="black")
     }
     p <- p +
+         scale_x_continuous(labels=scales::percent) +
          xlab("Repeat Percent") +
          ylab("Frequency")
     return(p)
