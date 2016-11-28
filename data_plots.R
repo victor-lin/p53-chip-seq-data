@@ -238,16 +238,23 @@ plot_rep_count_vs_length_box <- function() {
 }
 
 plot_sample_anno_distribution <- function() {
+    # Stacked barplot of annotation distributions for samples.
+    # Annotation stacks sorted by frequency in master table.
     message("Choose summary annotation file")
     anno_summary <- read.delim(file.choose())
     require(RColorBrewer)
     getPalette <- colorRampPalette(brewer.pal(9, "Set1"))
-    cat_ct = length(unique(anno_summary$Annotation.Category))
+    category.order <- sort(table(master_table$Annotation.Category),
+                           decreasing=TRUE)
+    anno_summary$Annotation.Category <- factor(anno_summary$Annotation.Category,
+                                               levels=names(category.order))
     p <- ggplot(data=anno_summary) +
          geom_bar(aes(x=Sample.Name, fill=Annotation.Category),
                   position = "fill") +
          theme(axis.text.x=element_text(angle=45, hjust=1)) +
-         scale_fill_manual(values=getPalette(cat_ct)) +
+         scale_fill_manual(values=getPalette(length(category.order)),
+                           name="Annotation Category") +
+         scale_y_continuous(labels=scales::percent) +
          xlab("Sample Name") +
          ylab("Frequency")
     return(p)
