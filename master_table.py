@@ -59,7 +59,7 @@ def generate_master_table(options):
                                          AND s.sample_end <= p.end)""",
                            locals())
     grouped = merged_samples.groupby(['chr', 'start', 'end'])
-    tbl['Sample Count'] = grouped.count()['Sample_Name'].values
+    tbl['sample_count'] = grouped.count()['Sample_Name'].values
     for sample_name in set(samples.Sample_Name):
         tbl[sample_name] = 0
 
@@ -78,17 +78,20 @@ def generate_master_table(options):
     print
 
     anno = get_anno_table(options.anno_file)
-    tbl['Detailed Annotation'] = anno['Detailed Annotation']
-    tbl['Annotation Category'] = tbl['Detailed Annotation'].apply(anno_category)
-    tbl['Gene Name'] = anno['Gene Name']
+    tbl['detailed_annotation'] = anno['Detailed Annotation']
+    tbl['annotation'] = tbl['detailed_annotation'].apply(anno_category)
+    tbl['gene'] = anno['Gene Name']
 
     # aggregate samples by regions
     grouped_samples = grouped.agg({'MACS_Score': max,
                                    'fold_enrichment': max}).reset_index()
+    grouped_samples.rename(columns={'MACS_Score': 'MACS_max',
+                                    'fold_enrichment': 'FE_max'},
+                           inplace=True)
 
     # aggregate matrices by regions
     mast_out = read_table(options.mast_file)
-    mast_out['matrix_score'] = -log10(mast_out['hit_p.value'])
+    mast_out['P53match_score'] = -log10(mast_out['hit_p.value'])
     merged_mast = sqldf("""SELECT *, mo.ROWID AS matrix_id
                              FROM peaks AS p
                              JOIN mast_out AS mo
@@ -97,31 +100,29 @@ def generate_master_table(options):
                         locals())
     grouped2 = merged_mast.groupby(['chr', 'start', 'end'])
     # TODO: aggregate matrix_id
-    grouped_mast = grouped2.agg({'matrix_score': max}).reset_index()
+    grouped_mast = grouped2.agg({'P53match_score': max}).reset_index()
+    grouped_mast.rename(columns={'P53match_score': 'P53match_score_max'},
+                        inplace=True)
 
     tbl = sqldf("""   SELECT t.*,
-                                gm.matrix_score,
-                                gs.MACS_Score, gs.fold_enrichment
-                           FROM tbl AS t
-                      LEFT JOIN grouped_mast AS gm
-                                ON (gm.chr = t.chr
-                                    AND gm.start = t.start
-                                    AND gm.end = t.end)
-                      LEFT JOIN grouped_samples AS gs
-                                ON (gs.chr = t.chr
-                                    AND gs.start = t.start
-                                    AND gs.end = t.end)""",
+                             gm.P53match_score_max,
+                             gs.MACS_max,
+                             gs.FE_max
+                        FROM tbl AS t
+                   LEFT JOIN grouped_mast AS gm
+                             ON (gm.chr = t.chr
+                                 AND gm.start = t.start
+                                 AND gm.end = t.end)
+                   LEFT JOIN grouped_samples AS gs
+                             ON (gs.chr = t.chr
+                                 AND gs.start = t.start
+                                 AND gs.end = t.end)""",
                 locals())
-    tbl.rename(columns={'matrix_score': 'Max Matrix Score',
-                        'MACS_Score': 'Max MACS Score',
-                        'fold_enrichment': 'Max Fold Enrichment'},
-               inplace=True)
-
-    tbl['Repeat Count'] = [seq_record.seq.count('N') for seq_record
+    tbl['repeat_count'] = [seq_record.seq.count('N') for seq_record
                            in SeqIO.parse(options.fasta_file, 'fasta')]
-    tbl['Length'] = [len(seq_record) for seq_record
-                     in SeqIO.parse(options.fasta_file, 'fasta')]
-    tbl['Repeat Proportion'] = 1.0 * tbl['Repeat Count'] / tbl['Length']
+    tbl['peak_length'] = [len(seq_record) for seq_record
+                          in SeqIO.parse(options.fasta_file, 'fasta')]
+    tbl['repeat_proportion'] = 1.0 * tbl['repeat_count'] / tbl['peak_length']
     return tbl
 
 

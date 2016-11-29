@@ -3,7 +3,7 @@ message("Choose master table file")
 master_table <- read.delim(file.choose())
 
 add_rep_status <- function(master_table, rep_cutoff) {
-    master_table$Repeat.Status <- factor(round(master_table$Repeat.Proportion
+    master_table$Repeat.Status <- factor(round(master_table$repeat_proportion
                                                - rep_cutoff + 0.5))
     return(master_table)
 }
@@ -28,15 +28,15 @@ plot_base <- function(rep_cut) {
 }
 
 get_num_high_matrix <- function(matrix_cut) {
-    matrix_scores <- master_table[!is.na(master_table$Max.Matrix.Score)
-                                  & master_table$Max.Matrix.Score >= matrix_cut, ]
+    matrix_scores <- master_table[!is.na(master_table$P53match_score_max)
+                                  & master_table$P53match_score_max >= matrix_cut, ]
     return(nrow(matrix_scores))
 }
 
 get_num_rep_and_high_matrix <- function(rep_cut, matrix_cut) {
-    matrix_scores <- master_table[!is.na(master_table$Max.Matrix.Score)
-                                  & master_table$Max.Matrix.Score >= matrix_cut, ]
-    reps <- master_table[master_table$Repeat.Proportion >= rep_cut, ]
+    matrix_scores <- master_table[!is.na(master_table$P53match_score_max)
+                                  & master_table$P53match_score_max >= matrix_cut, ]
+    reps <- master_table[master_table$repeat_proportion >= rep_cut, ]
     rep_and_matrix <- merge(matrix_scores, reps)
     return(nrow(rep_and_matrix))
 }
@@ -70,10 +70,10 @@ plot_rep_cutoffs <- function(matrix_cut, interval) {
 plot_macs_vs_matrix <- function() {
     p <- plot_base()
     p <- p +
-         geom_point(aes(Max.MACS.Score, Max.Matrix.Score,
-                        color=Repeat.Proportion)) +
+         geom_point(aes(MACS_max, P53match_score_max,
+                        color=repeat_proportion)) +
          xlab("Max MACS Score") +
-         ylab("Max Matrix Score") +
+         ylab("Max P53 Match Score") +
          scale_colour_gradient(name="% Repeats",
                                labels=paste(seq(0, 100, by=25),
                                             "%", sep=""))
@@ -83,10 +83,10 @@ plot_macs_vs_matrix <- function() {
 plot_fe_vs_matrix <- function() {
     p <- plot_base()
     p <- p +
-         geom_point(aes(Max.Fold.Enrichment, Max.Matrix.Score,
-                        color=Repeat.Proportion)) +
+         geom_point(aes(FE_max, P53match_score_max,
+                        color=repeat_proportion)) +
          xlab("Max Fold Enrichment") +
-         ylab("Max Matrix Score") +
+         ylab("Max P53 Match Score") +
          scale_colour_gradient(name="% Repeats",
                                labels=paste(seq(0, 100, by=25),
                                             "%", sep=""))
@@ -96,8 +96,8 @@ plot_fe_vs_matrix <- function() {
 plot_macs_vs_fe <- function() {
     p <- plot_base()
     p <- p +
-         geom_point(aes(Max.MACS.Score, Max.Fold.Enrichment,
-                        color=Repeat.Proportion)) +
+         geom_point(aes(MACS_max, FE_max,
+                        color=repeat_proportion)) +
          xlab("Max MACS Score") +
          ylab("Max Fold Enrichment") +
          scale_colour_gradient(name="% Repeats",
@@ -126,7 +126,7 @@ plot_chr_vs_macs <- function(rep_cut) {
     else {
         p <- plot_base()
     }
-    p <- p + geom_boxplot(aes(x=chr, y=Max.MACS.Score)) +
+    p <- p + geom_boxplot(aes(x=chr, y=MACS_max)) +
          xlab("Chromosome") +
          ylab("Max MACS Score")
     return(p)
@@ -140,9 +140,9 @@ plot_matrix_score_hist <- function(rep_cut) {
         p <- plot_base()
     }
     p <- p +
-         geom_histogram(aes(x=Max.Matrix.Score),
+         geom_histogram(aes(x=P53match_score_max),
                         binwidth=.1) +
-         xlab("Max Matrix Score")
+         xlab("Max P53 Match Score")
     return(p)
 }
 
@@ -154,7 +154,7 @@ plot_macs_score_hist <- function(rep_cut) {
         p <- plot_base()
     }
     p <- p +
-         geom_histogram(aes(x=Max.MACS.Score), binwidth=100) +
+         geom_histogram(aes(x=MACS_max), binwidth=100) +
          xlab("Max MACS Score") +
          scale_x_continuous(limits=c(50, NA))
     return(p)
@@ -162,7 +162,7 @@ plot_macs_score_hist <- function(rep_cut) {
 
 plot_rep_count_hist <- function() {
     p <- plot_base() +
-         geom_histogram(aes(x=Repeat.Count), binwidth=50) +
+         geom_histogram(aes(x=repeat_count), binwidth=50) +
          xlab("Repeat Count") +
          ylab("Frequency")
     return(p)
@@ -174,10 +174,10 @@ plot_rep_percent_hist <- function(breaks) {
     #           ex. c(0,1,50,90,100)
     p <- plot_base()
     if (missing(breaks)) {
-        p <- p + geom_histogram(aes(x=Repeat.Proportion), binwidth=.01)
+        p <- p + geom_histogram(aes(x=repeat_proportion), binwidth=.01)
     }
     else {
-        p <- p + geom_histogram(aes(x=Repeat.Proportion),
+        p <- p + geom_histogram(aes(x=repeat_proportion),
                                 breaks=breaks / 100, fill="white", color="black")
     }
     p <- p +
@@ -195,8 +195,7 @@ plot_anno_cat_hist <- function(rep_cut) {
         p <- plot_base()
     }
     p <- p +
-         geom_bar(aes(x=reorder(Annotation.Category,
-                                Annotation.Category,
+         geom_bar(aes(x=reorder(annotation, annotation,
                                 function(x)-length(x)))) +
          xlab("Annotation Category") +
          theme(axis.text.x=element_text(angle=45, hjust=1))
@@ -205,10 +204,9 @@ plot_anno_cat_hist <- function(rep_cut) {
 
 plot_anno_cat_vs_rep <- function() {
     p <- plot_base() +
-         geom_point(aes(x=reorder(Annotation.Category,
-                                  Annotation.Category,
+         geom_point(aes(x=reorder(annotation, annotation,
                                   function(x)-length(x)),
-                        y=Repeat.Proportion)) +
+                        y=repeat_proportion)) +
          xlab("Annotation Category") +
          ylab("% Repeats") +
          theme(axis.text.x=element_text(angle=45, hjust=1)) +
@@ -218,8 +216,8 @@ plot_anno_cat_vs_rep <- function() {
 
 plot_rep_count_vs_length <- function() {
     p <- plot_base() +
-         geom_point(aes(x=Repeat.Count, y=Length,
-                        color=Repeat.Proportion)) +
+         geom_point(aes(x=repeat_count, y=peak_length,
+                        color=repeat_proportion)) +
          xlab("Repeat Count") +
          ylab("Peak Length")
     return(p)
@@ -227,8 +225,8 @@ plot_rep_count_vs_length <- function() {
 
 plot_rep_count_vs_length_box <- function() {
     p <- plot_base() +
-         geom_boxplot(aes(x=Repeat.Count, y=Length,
-                          group=cut_width(Repeat.Count,
+         geom_boxplot(aes(x=repeat_count, y=peak_length,
+                          group=cut_width(repeat_count,
                                           width=500,
                                           boundary=1,
                                           closed="left"))) +
@@ -244,12 +242,12 @@ plot_sample_anno_distribution <- function() {
     anno_summary <- read.delim(file.choose())
     require(RColorBrewer)
     getPalette <- colorRampPalette(brewer.pal(9, "Set1"))
-    category.order <- sort(table(master_table$Annotation.Category),
+    category.order <- sort(table(master_table$annotation),
                            decreasing=TRUE)
-    anno_summary$Annotation.Category <- factor(anno_summary$Annotation.Category,
-                                               levels=names(category.order))
+    anno_summary$annotation <- factor(anno_summary$annotation,
+                                      levels=names(category.order))
     p <- ggplot(data=anno_summary) +
-         geom_bar(aes(x=Sample.Name, fill=Annotation.Category),
+         geom_bar(aes(x=Sample.Name, fill=annotation),
                   position = "fill") +
          theme(axis.text.x=element_text(angle=45, hjust=1)) +
          scale_fill_manual(values=getPalette(length(category.order)),

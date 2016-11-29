@@ -78,11 +78,11 @@ if __name__ == '__main__':
     mt_macs = pd.read_table(mt_macs_maxmat)
     mt_fe = pd.read_table(mt_fe_maxmat)
 
-    mt_macs[mt_macs["Sample Count"] > 1].to_csv(mt_macs_intersect,
+    mt_macs[mt_macs["sample_count"] > 1].to_csv(mt_macs_intersect,
                                                 sep='\t', index=False)
-    mt_fe[mt_fe["Sample Count"] > 1].to_csv(mt_fe_intersect,
+    mt_fe[mt_fe["sample_count"] > 1].to_csv(mt_fe_intersect,
                                             sep='\t', index=False)
-    mt_macs[mt_macs["Max Matrix Score"] > 6].to_csv(mt_macs_6mat,
-                                                    sep='\t', index=False)
-    mt_fe[mt_fe["Max Matrix Score"] > 6].to_csv(mt_fe_6mat,
-                                                sep='\t', index=False)
+    mt_macs[mt_macs["P53match_score_max"] > 6].to_csv(mt_macs_6mat,
+                                                      sep='\t', index=False)
+    mt_fe[mt_fe["P53match_score_max"] > 6].to_csv(mt_fe_6mat,
+                                                  sep='\t', index=False)
