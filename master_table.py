@@ -42,6 +42,12 @@ def get_anno_table(anno_file):
 
 
 def generate_master_table(options):
+    """Generate master table containing all columns."""
+
+    # aggregation functions for scores
+    max_all_functions = {'_max': max,
+                         '_all': lambda x: ','.join(map(str, x))}
+
     # get peaks
     peaks = read_table(options.merged_file,
                        header=None, names=('chr', 'start', 'end'))
@@ -72,9 +78,9 @@ def generate_master_table(options):
         group = grouped.get_group(key)
         for i, s in enumerate(group['Sample_Name']):
             if options.sample_col == 'macs':
-                tbl.loc[table_i, s] = group['MACS_Score'].iloc[i]
+                tbl.loc[table_i, s] = group['MACS'].iloc[i]
             elif options.sample_col == 'fe':
-                tbl.loc[table_i, s] = group['fold_enrichment'].iloc[i]
+                tbl.loc[table_i, s] = group['FE'].iloc[i]
     print
 
     anno = get_anno_table(options.anno_file)
@@ -83,11 +89,11 @@ def generate_master_table(options):
     tbl['gene'] = anno['Gene Name']
 
     # aggregate samples by regions
-    grouped_samples = grouped.agg({'MACS_Score': max,
-                                   'fold_enrichment': max}).reset_index()
-    grouped_samples.rename(columns={'MACS_Score': 'MACS_max',
-                                    'fold_enrichment': 'FE_max'},
-                           inplace=True)
+    grouped_samples = grouped.agg({'MACS':
+                                   max_all_functions,
+                                   'FE':
+                                   max_all_functions}).reset_index()
+    grouped_samples.columns = map(''.join, grouped_samples.columns.values)
 
     # aggregate matrices by regions
     mast_out = read_table(options.mast_file)
@@ -100,14 +106,17 @@ def generate_master_table(options):
                         locals())
     grouped2 = merged_mast.groupby(['chr', 'start', 'end'])
     # TODO: aggregate matrix_id
-    grouped_mast = grouped2.agg({'P53match_score': max}).reset_index()
-    grouped_mast.rename(columns={'P53match_score': 'P53match_score_max'},
-                        inplace=True)
+    grouped_mast = grouped2.agg({'P53match_score':
+                                 max_all_functions}).reset_index()
+    grouped_mast.columns = map(''.join, grouped_mast.columns.values)
 
     tbl = sqldf("""   SELECT t.*,
                              gm.P53match_score_max,
                              gs.MACS_max,
-                             gs.FE_max
+                             gs.FE_max,
+                             gm.P53match_score_all,
+                             gs.MACS_all,
+                             gs.FE_all
                         FROM tbl AS t
                    LEFT JOIN grouped_mast AS gm
                              ON (gm.chr = t.chr

@@ -24,13 +24,7 @@ anno_file = os.path.join(etc_dir, 'MACSscore_summary_valid_merged.anno')
 sample_annos_file = os.path.join(etc_dir, 'all_samples.anno')
 
 # results/
-mt_name = 'ChIP_master_table_{}_{}.txt'
-mt_macs_maxmat = os.path.join(result_dir, mt_name.format('macs', 'maxmat'))
-mt_fe_maxmat = os.path.join(result_dir, mt_name.format('fe', 'maxmat'))
-mt_macs_intersect = os.path.join(result_dir, mt_name.format('macs', 'intersect'))
-mt_fe_intersect = os.path.join(result_dir, mt_name.format('fe', 'intersect'))
-mt_macs_6mat = os.path.join(result_dir, mt_name.format('macs', '6mat'))
-mt_fe_6mat = os.path.join(result_dir, mt_name.format('fe', '6mat'))
+mt_name = 'ChIP_master_table_{}{}.txt'
 
 r_cmd = 'Rscript'
 r_concat_sample_beds = 'concat_sample_beds.R'
@@ -72,17 +66,21 @@ def generate_master_table(out_fpath, sample_col='macs'):
 
 if __name__ == '__main__':
     setup()
-    generate_master_table(mt_macs_maxmat, 'macs')
-    generate_master_table(mt_fe_maxmat, 'fe')
-
-    mt_macs = pd.read_table(mt_macs_maxmat)
-    mt_fe = pd.read_table(mt_fe_maxmat)
-
-    mt_macs[mt_macs["sample_count"] > 1].to_csv(mt_macs_intersect,
-                                                sep='\t', index=False)
-    mt_fe[mt_fe["sample_count"] > 1].to_csv(mt_fe_intersect,
-                                            sep='\t', index=False)
-    mt_macs[mt_macs["P53match_score_max"] > 6].to_csv(mt_macs_6mat,
-                                                      sep='\t', index=False)
-    mt_fe[mt_fe["P53match_score_max"] > 6].to_csv(mt_fe_6mat,
-                                                  sep='\t', index=False)
+    for score in ('macs', 'fe'):
+        mt_fpath = os.path.join(result_dir, mt_name.format(score, ''))
+        generate_master_table(mt_fpath, score)
+        mt_df = pd.read_table(mt_fpath)
+        non_max_cols = [col for col in mt_df.columns
+                        if '_all' not in col]
+        for option in ('max', 'intersect', '6mat'):
+            sub_fname = mt_name.format(score, '_' + option)
+            sub_fpath = os.path.join(result_dir, sub_fname)
+            if option == 'max':
+                sub_df = mt_df[non_max_cols]
+            elif option == 'intersect':
+                sub_df = mt_df.loc[mt_df['sample_count'] > 1,
+                                   non_max_cols]
+            elif option == '6mat':
+                sub_df = mt_df.loc[mt_df['P53match_score_max'] > 6,
+                                   non_max_cols]
+            sub_df.to_csv(sub_fpath, sep='\t', index=False)
