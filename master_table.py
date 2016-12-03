@@ -38,6 +38,7 @@ def get_anno_table(anno_file):
     other_cols = ['Detailed Annotation', 'Gene Name']
     anno = read_table(anno_file)
     anno = anno[key + other_cols].sort_values(by=key)
+    anno.reset_index(drop=True, inplace=True)
     return anno
 
 
