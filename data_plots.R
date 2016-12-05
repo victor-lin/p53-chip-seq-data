@@ -1,22 +1,36 @@
 library(ggplot2)
+library(scales)
 message("Choose master table file")
 master_table <- read.delim(file.choose())
 
-add_rep_status <- function(master_table, rep_cutoff) {
-    master_table$Repeat.Status <- factor(round(master_table$repeat_proportion
-                                               - rep_cutoff + 0.5))
+
+get_rep_interval_names <- function(rep_cutoffs) {
+    # ex.
+    # rep_cutoffs=c(0, .1, .9, 1)
+    # return c("0-10%", "10%-90%", "90%-100%")
+    rep_cutoffs <- percent(rep_cutoffs)
+    return (sapply(1:(length(rep_cutoffs) - 1),
+                   function(x) paste(rep_cutoffs[x], '-',
+                                     rep_cutoffs[x + 1], sep='')))
+}
+
+add_rep_status <- function(master_table, rep_cutoffs) {
+    rep_cutoffs <- c(0, rep_cutoffs, 1)
+    interval_names <- get_rep_interval_names(rep_cutoffs)
+    repeat_status <- interval_names[findInterval(master_table$repeat_proportion,
+                                                 rep_cutoffs,
+                                                 rightmost.closed=TRUE)]
+    master_table$repeat_status <- factor(repeat_status)
     return(master_table)
 }
 
-plot_base <- function(rep_cut) {
-    if (!missing(rep_cut)) {
-        master_table <- add_rep_status(master_table, rep_cut)
+plot_base <- function(rep_cutoffs) {
+    if (!missing(rep_cutoffs)) {
+        master_table <- add_rep_status(master_table, rep_cutoffs)
         p <- ggplot(data=master_table,
-                aes(fill=Repeat.Status))
+                aes(fill=repeat_status))
         p <- p +
-             scale_fill_discrete(name=paste("Rep Status\n(cutoff=", rep_cut, ")", sep=""),
-                                 breaks=c(0, 1),
-                                 labels=c("Non-repeat", "Repeat"))
+             scale_fill_discrete(name="Repeat Status")
     }
     else {
         p <- ggplot(data=master_table)
@@ -33,10 +47,10 @@ get_num_high_matrix <- function(matrix_cut) {
     return(nrow(matrix_scores))
 }
 
-get_num_rep_and_high_matrix <- function(rep_cut, matrix_cut) {
+get_num_rep_and_high_matrix <- function(rep_cutoffs, matrix_cut) {
     matrix_scores <- master_table[!is.na(master_table$P53match_score_max)
                                   & master_table$P53match_score_max >= matrix_cut, ]
-    reps <- master_table[master_table$repeat_proportion >= rep_cut, ]
+    reps <- master_table[master_table$repeat_proportion >= rep_cutoffs, ]
     rep_and_matrix <- merge(matrix_scores, reps)
     return(nrow(rep_and_matrix))
 }
@@ -119,9 +133,9 @@ plot_macs_vs_fe <- function() {
 #     return(p)
 # }
 
-plot_chr_vs_macs <- function(rep_cut) {
-    if (!missing(rep_cut)) {
-        p <- plot_base(rep_cut)
+plot_chr_vs_macs <- function(rep_cutoffs) {
+    if (!missing(rep_cutoffs)) {
+        p <- plot_base(rep_cutoffs)
     }
     else {
         p <- plot_base()
@@ -132,9 +146,9 @@ plot_chr_vs_macs <- function(rep_cut) {
     return(p)
 }
 
-plot_matrix_score_hist <- function(rep_cut) {
-    if (!missing(rep_cut)) {
-        p <- plot_base(rep_cut)
+plot_matrix_score_hist <- function(rep_cutoffs) {
+    if (!missing(rep_cutoffs)) {
+        p <- plot_base(rep_cutoffs)
     }
     else {
         p <- plot_base()
@@ -146,9 +160,9 @@ plot_matrix_score_hist <- function(rep_cut) {
     return(p)
 }
 
-plot_macs_score_hist <- function(rep_cut) {
-    if (!missing(rep_cut)) {
-        p <- plot_base(rep_cut)
+plot_macs_score_hist <- function(rep_cutoffs) {
+    if (!missing(rep_cutoffs)) {
+        p <- plot_base(rep_cutoffs)
     }
     else {
         p <- plot_base()
@@ -187,9 +201,9 @@ plot_rep_percent_hist <- function(breaks) {
     return(p)
 }
 
-plot_anno_cat_hist <- function(rep_cut) {
-    if (!missing(rep_cut)) {
-        p <- plot_base(rep_cut)
+plot_anno_cat_hist <- function(rep_cutoffs) {
+    if (!missing(rep_cutoffs)) {
+        p <- plot_base(rep_cutoffs)
     }
     else {
         p <- plot_base()
