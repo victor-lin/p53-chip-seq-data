@@ -42,6 +42,13 @@ def get_anno_table(anno_file):
     return anno
 
 
+def get_mast_data(mast_file):
+    """Return DataFrame from MAST file."""
+    mast_out = read_table(mast_file)
+    mast_out['P53match_score'] = -log10(mast_out['hit_p.value'])
+    return mast_out
+
+
 def generate_master_table(options):
     """Generate master table containing all columns."""
 
@@ -97,8 +104,7 @@ def generate_master_table(options):
     grouped_samples.columns = map(''.join, grouped_samples.columns.values)
 
     # aggregate matrices by regions
-    mast_out = read_table(options.mast_file)
-    mast_out['P53match_score'] = -log10(mast_out['hit_p.value'])
+    mast_out = get_mast_data(options.mast_file)
     merged_mast = sqldf("""SELECT *, mo.ROWID AS matrix_id
                              FROM peaks AS p
                              JOIN mast_out AS mo
