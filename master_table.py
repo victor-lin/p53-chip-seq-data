@@ -139,7 +139,7 @@ def generate_master_table(options):
     tbl['peak_length'] = [len(seq_record) for seq_record
                           in SeqIO.parse(options.fasta_file, 'fasta')]
     tbl['repeat_proportion'] = 1.0 * tbl['repeat_count'] / tbl['peak_length']
-    return tbl
+    tbl.to_csv(options.out_file, sep='\t', index=False)
 
 
 if __name__ == "__main__":
@@ -159,5 +159,4 @@ if __name__ == "__main__":
     parser.add_option('--sample_col', choices=['macs', 'fe'],
                       help='value for sample column')
     (options, args) = parser.parse_args()
-    master_table = generate_master_table(options)
-    master_table.to_csv(options.out_file, sep='\t', index=False)
+    generate_master_table(options)
