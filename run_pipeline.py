@@ -1,9 +1,6 @@
 #!/usr/bin/env python
-
 import subprocess
 import os
-import pandas as pd
-
 
 # base dir
 base_dir = os.path.dirname(os.path.realpath(__file__))
@@ -24,7 +21,7 @@ anno_file = os.path.join(etc_dir, 'MACSscore_summary_valid_merged.anno')
 sample_annos_file = os.path.join(etc_dir, 'all_samples.anno')
 
 # results/
-mt_name = 'ChIP_master_table_{}{}.txt'
+mt_name = 'ChIP_master_table_{}.txt'
 
 r_cmd = 'Rscript'
 r_concat_sample_beds = 'concat_sample_beds.R'
@@ -64,23 +61,10 @@ def generate_master_table(out_fpath, sample_col='macs'):
                '-o', out_fpath]
     subprocess.call(['python', '-u', py_master_table] + mt_args)
 
+
 if __name__ == '__main__':
     setup()
     for score in ('macs', 'fe'):
-        mt_fpath = os.path.join(result_dir, mt_name.format(score, ''))
+        mt_fpath = os.path.join(result_dir, mt_name.format(score))
         generate_master_table(mt_fpath, score)
-        mt_df = pd.read_table(mt_fpath)
-        non_max_cols = [col for col in mt_df.columns
-                        if '_all' not in col]
-        for option in ('max', 'intersect', '6mat'):
-            sub_fname = mt_name.format(score, '_' + option)
-            sub_fpath = os.path.join(result_dir, sub_fname)
-            if option == 'max':
-                sub_df = mt_df[non_max_cols]
-            elif option == 'intersect':
-                sub_df = mt_df.loc[mt_df['sample_count'] > 1,
-                                   non_max_cols]
-            elif option == '6mat':
-                sub_df = mt_df.loc[mt_df['P53match_score_max'] > 6,
-                                   non_max_cols]
-            sub_df.to_csv(sub_fpath, sep='\t', index=False)
+        # TODO: generate master table subsets
