@@ -1,9 +1,10 @@
-import sys
 import pandas as pd
 from pandasql import sqldf
 from optparse import OptionParser
 from numpy import log10
 from Bio import SeqIO
+
+from chip_seq import SeqSample
 
 
 def anno_category(detailed_anno):
@@ -49,97 +50,47 @@ def get_mast_data(mast_file):
     return mast_out
 
 
-def generate_master_table(options):
-    """Generate master table containing all columns."""
-
-    # aggregation functions for scores
-    max_all_functions = {'_max': max,
-                         '_all': lambda x: ','.join(map(str, x))}
-
-    # get peaks
+def generate_master_table_melted(options):
+    """Generate master table."""
+    seq_sample_attrs = ['cell_type', 'treatment_type',
+                        'treatment_time', 'treatment_repeat']
     peaks = pd.read_table(options.merged_file,
                           header=None, names=('chr', 'start', 'end'))
+    peaks['repeat_count'] = [seq_record.seq.count('N') for seq_record
+                             in SeqIO.parse(options.fasta_file, 'fasta')]
+    peaks['peak_length'] = [len(seq_record) for seq_record
+                            in SeqIO.parse(options.fasta_file, 'fasta')]
+    peaks['repeat_proportion'] = 1.0 * peaks['repeat_count'] / peaks['peak_length']
     samples = pd.read_table(options.samples_file)
+    sample_names = set(samples['sample_name'])
+    sample_obj_map = {sample_name: SeqSample(sample_name)
+                      for sample_name in sample_names}
     samples.rename(columns={col: 'sample_' + col
                             for col in ('chr', 'start', 'end', 'length')},
                    inplace=True)
-
-    # table DataFrame
-    tbl = peaks
-    merged_samples = sqldf("""SELECT *
-                                FROM peaks AS p
-                                JOIN samples AS s
-                                     ON (s.sample_start >= p.start
-                                         AND s.sample_end <= p.end)""",
-                           locals())
-    grouped = merged_samples.groupby(['chr', 'start', 'end'])
-    tbl['sample_count'] = grouped.count()['sample_name'].values
-    for sample_name in set(samples['sample_name']):
-        tbl[sample_name] = 0
-
-    for table_i, row in tbl.iterrows():
-        sys.stdout.write('\rUpdating sample {} columns for '
-                         'row {}'.format(options.sample_col,
-                                         table_i + 1))
-        sys.stdout.flush()
-        key = tuple(list(row.values)[:3])
-        group = grouped.get_group(key)
-        for i, s in enumerate(group['sample_name']):
-            if options.sample_col == 'macs':
-                tbl.loc[table_i, s] = group['MACS_score'].iloc[i]
-            elif options.sample_col == 'fe':
-                tbl.loc[table_i, s] = group['FE'].iloc[i]
-    print
-
-    anno = get_anno_table(options.anno_file)
-    tbl['detailed_annotation'] = anno['Detailed Annotation']
-    tbl['annotation'] = tbl['detailed_annotation'].apply(anno_category)
-    tbl['gene'] = anno['Gene Name']
-
-    # aggregate samples by regions
-    grouped_samples = grouped.agg({'MACS_score':
-                                   max_all_functions,
-                                   'FE':
-                                   max_all_functions}).reset_index()
-    grouped_samples.columns = map(''.join, grouped_samples.columns.values)
-
-    # aggregate matrices by regions
-    mast_out = get_mast_data(options.mast_file)
-    merged_mast = sqldf("""SELECT *, mo.ROWID AS matrix_id
-                             FROM peaks AS p
-                             JOIN mast_out AS mo
-                                  ON (mo.hit_start >= p.start
-                                      AND mo.hit_end <= p.end)""",
-                        locals())
-    grouped2 = merged_mast.groupby(['chr', 'start', 'end'])
-    # TODO: aggregate matrix_id
-    grouped_mast = grouped2.agg({'P53match_score':
-                                 max_all_functions}).reset_index()
-    grouped_mast.columns = map(''.join, grouped_mast.columns.values)
-
-    tbl = sqldf("""   SELECT t.*,
-                             gm.P53match_score_max,
-                             gs.MACS_max,
-                             gs.FE_max,
-                             gm.P53match_score_all,
-                             gs.MACS_all,
-                             gs.FE_all
-                        FROM tbl AS t
-                   LEFT JOIN grouped_mast AS gm
-                             ON (gm.chr = t.chr
-                                 AND gm.start = t.start
-                                 AND gm.end = t.end)
-                   LEFT JOIN grouped_samples AS gs
-                             ON (gs.chr = t.chr
-                                 AND gs.start = t.start
-                                 AND gs.end = t.end)""",
+    tbl = sqldf("""SELECT *
+                     FROM peaks AS p
+                     JOIN samples AS s
+                          ON (s.sample_start >= p.start
+                              AND s.sample_end <= p.end)""",
                 locals())
-    tbl['repeat_count'] = [seq_record.seq.count('N') for seq_record
-                           in SeqIO.parse(options.fasta_file, 'fasta')]
-    tbl['peak_length'] = [len(seq_record) for seq_record
-                          in SeqIO.parse(options.fasta_file, 'fasta')]
-    tbl['repeat_proportion'] = 1.0 * tbl['repeat_count'] / tbl['peak_length']
-    tbl.to_csv(options.out_file, sep='\t', index=False)
+    tbl = tbl.merge(tbl['sample_name'].apply(lambda s:
+                    pd.Series({attr: getattr(sample_obj_map[s], attr)
+                               for attr in seq_sample_attrs})),
+                    left_index=True, right_index=True)
+    # TODO
+    # annotation file
+    # anno = get_anno_table(options.anno_file)
+    # tbl['detailed_annotation'] = anno['Detailed Annotation']
+    # tbl['annotation'] = tbl['detailed_annotation'].apply(anno_category)
+    # tbl['gene'] = anno['Gene Name']
+    # output file
+    out_columns = (['chr', 'start', 'end', 'sample_name'] + seq_sample_attrs +
+                   ['repeat_count', 'peak_length', 'repeat_proportion'] +
+                   ['MACS_score', 'FE'])
+    # + ['annotation', 'detailed_annotation', 'gene']
+    tbl.to_csv(options.out_file, sep='\t', index=False,
+               columns=out_columns)
 
 
 if __name__ == "__main__":
@@ -156,7 +107,5 @@ if __name__ == "__main__":
                       help='FASTA file for merged regions')
     parser.add_option('-o', '--out_file',
                       help='output filepath')
-    parser.add_option('--sample_col', choices=['macs', 'fe'],
-                      help='value for sample column')
     (options, args) = parser.parse_args()
-    generate_master_table(options)
+    generate_master_table_melted(options)

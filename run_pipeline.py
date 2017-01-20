@@ -21,7 +21,7 @@ anno_file = os.path.join(etc_dir, 'MACSscore_summary_valid_merged.anno')
 sample_annos_file = os.path.join(etc_dir, 'all_samples.anno')
 
 # results/
-mt_name = 'ChIP_master_table_{}.txt'
+mt_name = 'ChIP_master_table.txt'
 
 r_cmd = 'Rscript'
 r_concat_sample_beds = 'concat_sample_beds.R'
@@ -40,7 +40,6 @@ def setup():
                           'sort -k1,1 -k2,2n) > {}'.format(samples_file,
                                                            merged_file),
                           shell=True, executable='/bin/bash')
-
     subprocess.call(['python', py_concat_sample_annos,
                      '--anno_directory', sample_annos_dir,
                      '-o', sample_annos_file,
@@ -51,20 +50,18 @@ def setup():
     # subprocess.call(['module', 'load', 'gcc/5.2.0', 'homer/4.8'])
 
 
-def generate_master_table(out_fpath, sample_col='macs'):
+def generate_master_table(out_fpath):
     mt_args = ['--merged_file', merged_file,
                '--mast_file', mast_out,
                '--samples_file', samples_file,
                '--fasta_file', target_fasta,
                '--anno_file', anno_file,
-               '--sample_col', sample_col,
                '-o', out_fpath]
     subprocess.call(['python', '-u', py_master_table] + mt_args)
 
 
 if __name__ == '__main__':
     setup()
-    for score in ('macs', 'fe'):
-        mt_fpath = os.path.join(result_dir, mt_name.format(score))
-        generate_master_table(mt_fpath, score)
-        # TODO: generate master table subsets
+    mt_fpath = os.path.join(result_dir, mt_name)
+    generate_master_table(mt_fpath)
+    # TODO: generate master table subsets
