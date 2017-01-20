@@ -56,10 +56,25 @@ def get_mast_data(mast_file):
     return mast_out
 
 
-def generate_master_table_melted(options):
-    """Generate master table."""
-    seq_sample_attrs = ['cell_type', 'treatment_type',
-                        'treatment_time', 'treatment_repeat']
+def get_merged_peak_df(options):
+    """Return pandas.DataFrame of merged peak data.
+
+    BED columns:
+    * chr
+    * start
+    * end
+
+    Repeat info columns:
+    * repeat_count
+    * peak_length
+    * repeat_proportion
+
+    Annotation data columns:
+    * detailed_annotation
+    * annotation
+    * gene
+
+    """
     peaks = pd.read_table(options.merged_file,
                           header=None, names=('chr', 'start', 'end'))
     # add repeat information
@@ -73,7 +88,14 @@ def generate_master_table_melted(options):
     peaks['detailed_annotation'] = anno['Detailed Annotation']
     peaks['annotation'] = peaks['detailed_annotation'].apply(anno_category)
     peaks['gene'] = anno['Gene Name']
-    # get sample info
+    return peaks
+
+
+def get_sample_peak_df(options, seq_sample_attrs):
+    """Return pandas.DataFrame of sample peak data.
+
+    Add additional columns for seq_sample_attrs.
+    """
     samples = pd.read_table(options.samples_file)
     sample_names = set(samples['sample_name'])
     sample_obj_map = {sample_name: SeqSample(sample_name)
@@ -81,16 +103,27 @@ def generate_master_table_melted(options):
     samples.rename(columns={col: 'sample_' + col
                             for col in ('chr', 'start', 'end', 'length')},
                    inplace=True)
+    samples = samples.merge(samples['sample_name'].apply(lambda s:
+                            pd.Series({attr: getattr(sample_obj_map[s], attr)
+                                       for attr in seq_sample_attrs})),
+                            left_index=True, right_index=True)
+    return samples
+
+
+def generate_master_table_melted(options):
+    """Generate master table."""
+    seq_sample_attrs = ['cell_type', 'treatment_type',
+                        'treatment_time', 'treatment_repeat']
+    peaks = get_merged_peak_df(options)
+    # get sample info
+    samples = get_sample_peak_df(options, seq_sample_attrs)
     tbl = sqldf("""SELECT *
                      FROM peaks AS p
                      JOIN samples AS s
                           ON (s.sample_start >= p.start
                               AND s.sample_end <= p.end)""",
                 locals())
-    tbl = tbl.merge(tbl['sample_name'].apply(lambda s:
-                    pd.Series({attr: getattr(sample_obj_map[s], attr)
-                               for attr in seq_sample_attrs})),
-                    left_index=True, right_index=True)
+    # TODO: add constraint s.sample_chr = p.chr ?
     # TODO: add MAST file data
     # output file
     out_columns = (['chr', 'start', 'end', 'sample_name'] + seq_sample_attrs +
