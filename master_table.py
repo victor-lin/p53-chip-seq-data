@@ -78,17 +78,23 @@ def generate_master_table_melted(options):
                     pd.Series({attr: getattr(sample_obj_map[s], attr)
                                for attr in seq_sample_attrs})),
                     left_index=True, right_index=True)
-    # TODO
     # annotation file
-    # anno = get_anno_table(options.anno_file)
-    # tbl['detailed_annotation'] = anno['Detailed Annotation']
-    # tbl['annotation'] = tbl['detailed_annotation'].apply(anno_category)
-    # tbl['gene'] = anno['Gene Name']
+    anno = get_anno_table(options.anno_file)
+    tbl = sqldf("""SELECT t.*,
+                          a.`Detailed Annotation` AS detailed_annotation,
+                          a.`Gene Name` AS gene
+                     FROM tbl as t
+                     JOIN anno as a
+                          ON (a.Chr = t.chr
+                              AND (a.Start - 1) = t.start
+                              AND a.End = t.end)""",
+                locals())
+    tbl['annotation'] = tbl['detailed_annotation'].apply(anno_category)
     # output file
     out_columns = (['chr', 'start', 'end', 'sample_name'] + seq_sample_attrs +
                    ['repeat_count', 'peak_length', 'repeat_proportion'] +
-                   ['MACS_score', 'FE'])
-    # + ['annotation', 'detailed_annotation', 'gene']
+                   ['MACS_score', 'FE'] +
+                   ['annotation', 'detailed_annotation', 'gene'])
     tbl.to_csv(options.out_file, sep='\t', index=False,
                columns=out_columns)
 
