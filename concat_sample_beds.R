@@ -20,8 +20,8 @@ for (fname in list.files()) {
     sample.name <- unlist(strsplit(fname, "_peaks.bed"))
     sample.df <- read.delim(fname, header=FALSE,
                             col.names=c("chr", "start", "end", "PeakID",
-                                        "MACS"))
-    sample.df$Sample_Name <- sample.name
+                                        "MACS_score"))
+    sample.df$sample_name <- sample.name
     if (fname == list.files()[1]) {
         summary.df <- sample.df
     }
@@ -36,7 +36,7 @@ for (fname in list.files()) {
     sample.name <- unlist(strsplit(fname, "_peaks.xls"))
     sample.df <- read.delim(fname, header=TRUE, skip=23)
     colnames(sample.df)[colnames(sample.df) == "fold_enrichment"] <- "FE"
-    sample.df$Sample_Name <- sample.name
+    sample.df$sample_name <- sample.name
     if (fname == list.files()[1]) {
         fe.df <- sample.df
     }
@@ -50,13 +50,13 @@ fe.df$start <- fe.df$start - 1
 
 df <- merge(summary.df[, !(names(summary.df) %in% "PeakID")],
             fe.df[, c("chr", "start", "end",
-                      "Sample_Name", "FE")],
-            by=(c("chr", "start", "end", "Sample_Name")))
+                      "sample_name", "FE")],
+            by=(c("chr", "start", "end", "sample_name")))
 
 # add length column, reorder columns
 df$length <- df$end - df$start
 df <- df[, c("chr", "start", "end", "length",
-             "Sample_Name", "MACS", "FE")]
+             "sample_name", "MACS_score", "FE")]
 
 if (!is.null(args$ignore)) {
     df <- df[df$chr != args$ignore, ]

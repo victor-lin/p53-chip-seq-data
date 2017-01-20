@@ -73,8 +73,8 @@ def generate_master_table(options):
                                          AND s.sample_end <= p.end)""",
                            locals())
     grouped = merged_samples.groupby(['chr', 'start', 'end'])
-    tbl['sample_count'] = grouped.count()['Sample_Name'].values
-    for sample_name in set(samples.Sample_Name):
+    tbl['sample_count'] = grouped.count()['sample_name'].values
+    for sample_name in set(samples['sample_name']):
         tbl[sample_name] = 0
 
     for table_i, row in tbl.iterrows():
@@ -84,9 +84,9 @@ def generate_master_table(options):
         sys.stdout.flush()
         key = tuple(list(row.values)[:3])
         group = grouped.get_group(key)
-        for i, s in enumerate(group['Sample_Name']):
+        for i, s in enumerate(group['sample_name']):
             if options.sample_col == 'macs':
-                tbl.loc[table_i, s] = group['MACS'].iloc[i]
+                tbl.loc[table_i, s] = group['MACS_score'].iloc[i]
             elif options.sample_col == 'fe':
                 tbl.loc[table_i, s] = group['FE'].iloc[i]
     print
@@ -97,7 +97,7 @@ def generate_master_table(options):
     tbl['gene'] = anno['Gene Name']
 
     # aggregate samples by regions
-    grouped_samples = grouped.agg({'MACS':
+    grouped_samples = grouped.agg({'MACS_score':
                                    max_all_functions,
                                    'FE':
                                    max_all_functions}).reset_index()
