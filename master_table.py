@@ -1,5 +1,5 @@
 import sys
-from pandas import read_table
+import pandas as pd
 from pandasql import sqldf
 from optparse import OptionParser
 from numpy import log10
@@ -36,7 +36,7 @@ def get_anno_table(anno_file):
     """
     key = ['Chr', 'Start', 'End']
     other_cols = ['Detailed Annotation', 'Gene Name']
-    anno = read_table(anno_file)
+    anno = pd.read_table(anno_file)
     anno = anno[key + other_cols].sort_values(by=key)
     anno.reset_index(drop=True, inplace=True)
     return anno
@@ -44,7 +44,7 @@ def get_anno_table(anno_file):
 
 def get_mast_data(mast_file):
     """Return DataFrame from MAST file."""
-    mast_out = read_table(mast_file)
+    mast_out = pd.read_table(mast_file)
     mast_out['P53match_score'] = -log10(mast_out['hit_p.value'])
     return mast_out
 
@@ -57,9 +57,9 @@ def generate_master_table(options):
                          '_all': lambda x: ','.join(map(str, x))}
 
     # get peaks
-    peaks = read_table(options.merged_file,
-                       header=None, names=('chr', 'start', 'end'))
-    samples = read_table(options.samples_file)
+    peaks = pd.read_table(options.merged_file,
+                          header=None, names=('chr', 'start', 'end'))
+    samples = pd.read_table(options.samples_file)
     samples.rename(columns={col: 'sample_' + col
                             for col in ('chr', 'start', 'end', 'length')},
                    inplace=True)
