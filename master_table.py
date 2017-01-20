@@ -27,24 +27,30 @@ def anno_category(detailed_anno):
             return category
 
 
-def get_anno_table(anno_file):
-    """Return DataFrame from annotation file.
+def get_anno_df(filepath, key=None, other_cols=None):
+    """Return DataFrame from HOMER annotation output file.
 
-    Variables
-    ---------
+    Parameters
+    ----------
+    filepath : filepath
     key : columns to sort by
     other_cols : additional columns to include from the annotation file
     """
-    key = ['Chr', 'Start', 'End']
-    other_cols = ['Detailed Annotation', 'Gene Name']
-    anno = pd.read_table(anno_file)
+    if not key:
+        key = ['Chr', 'Start', 'End']
+    if not other_cols:
+        other_cols = ['Detailed Annotation', 'Gene Name']
+    anno = pd.read_table(filepath)
     anno = anno[key + other_cols].sort_values(by=key)
     anno.reset_index(drop=True, inplace=True)
     return anno
 
 
 def get_mast_data(mast_file):
-    """Return DataFrame from MAST file."""
+    """Return DataFrame from MAST file.
+
+    Generate P53match_score from hit_p.value.
+    """
     mast_out = pd.read_table(mast_file)
     mast_out['P53match_score'] = -log10(mast_out['hit_p.value'])
     return mast_out
@@ -56,11 +62,18 @@ def generate_master_table_melted(options):
                         'treatment_time', 'treatment_repeat']
     peaks = pd.read_table(options.merged_file,
                           header=None, names=('chr', 'start', 'end'))
+    # add repeat information
     peaks['repeat_count'] = [seq_record.seq.count('N') for seq_record
                              in SeqIO.parse(options.fasta_file, 'fasta')]
     peaks['peak_length'] = [len(seq_record) for seq_record
                             in SeqIO.parse(options.fasta_file, 'fasta')]
     peaks['repeat_proportion'] = 1.0 * peaks['repeat_count'] / peaks['peak_length']
+    # annotation data
+    anno = get_anno_df(options.anno_file)
+    peaks['detailed_annotation'] = anno['Detailed Annotation']
+    peaks['annotation'] = peaks['detailed_annotation'].apply(anno_category)
+    peaks['gene'] = anno['Gene Name']
+    # get sample info
     samples = pd.read_table(options.samples_file)
     sample_names = set(samples['sample_name'])
     sample_obj_map = {sample_name: SeqSample(sample_name)
@@ -78,18 +91,7 @@ def generate_master_table_melted(options):
                     pd.Series({attr: getattr(sample_obj_map[s], attr)
                                for attr in seq_sample_attrs})),
                     left_index=True, right_index=True)
-    # annotation file
-    anno = get_anno_table(options.anno_file)
-    tbl = sqldf("""SELECT t.*,
-                          a.`Detailed Annotation` AS detailed_annotation,
-                          a.`Gene Name` AS gene
-                     FROM tbl as t
-                     JOIN anno as a
-                          ON (a.Chr = t.chr
-                              AND (a.Start - 1) = t.start
-                              AND a.End = t.end)""",
-                locals())
-    tbl['annotation'] = tbl['detailed_annotation'].apply(anno_category)
+    # TODO: add MAST file data
     # output file
     out_columns = (['chr', 'start', 'end', 'sample_name'] + seq_sample_attrs +
                    ['repeat_count', 'peak_length', 'repeat_proportion'] +
