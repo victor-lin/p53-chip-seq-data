@@ -27,6 +27,17 @@ def anno_category(detailed_anno):
             return category
 
 
+def get_repeat_type(detailed_anno):
+    """Return annotation subsection repeat type from detailed annotation.
+
+    Return the name after the rightmost vertical bar (if present).
+    If no bar is present, then return None.
+    """
+    last_vbar_index = detailed_anno.rfind('|')
+    if last_vbar_index > 0:
+        return detailed_anno[last_vbar_index + 1:]
+
+
 def get_anno_df(filepath, key=None, other_cols=None):
     """Return DataFrame from HOMER annotation output file.
 
@@ -87,6 +98,7 @@ def get_merged_peak_df(options):
     anno = get_anno_df(options.anno_file)
     peaks['detailed_annotation'] = anno['Detailed Annotation']
     peaks['annotation'] = peaks['detailed_annotation'].apply(anno_category)
+    peaks['repeat_type'] = peaks['detailed_annotation'].apply(get_repeat_type)
     peaks['gene'] = anno['Gene Name']
     return peaks
 
@@ -129,9 +141,21 @@ def generate_master_table_melted(options):
     out_columns = (['chr', 'start', 'end', 'sample_name'] + seq_sample_attrs +
                    ['repeat_count', 'peak_length', 'repeat_proportion'] +
                    ['MACS_score', 'FE'] +
-                   ['annotation', 'detailed_annotation', 'gene'])
+                   ['detailed_annotation', 'annotation', 'repeat_type', 'gene'])
     tbl.to_csv(options.out_file, sep='\t', index=False,
                columns=out_columns)
+
+
+def pivot_master_table(master_table_filepath, macs_output, fe_output):
+    """Write pivoted master tables."""
+    peak_cols = ['chr', 'start', 'end',
+                 'repeat_count', 'peak_length', 'repeat_proportion',
+                 'annotation', 'detailed_annotation', 'gene']
+    mt_df = pd.read_table(master_table_filepath)
+    pivot_table = pd.pivot_table(mt_df, index=peak_cols, columns='sample_name',
+                                 fill_value=0)
+    pivot_table['MACS_score'].to_csv(macs_output, sep='\t', index=False)
+    pivot_table['FE'].to_csv(fe_output, sep='\t', index=False)
 
 
 if __name__ == "__main__":
