@@ -146,18 +146,6 @@ def generate_master_table_melted(options):
                columns=out_columns)
 
 
-def pivot_master_table(master_table_filepath, macs_output, fe_output):
-    """Write pivoted master tables."""
-    peak_cols = ['chr', 'start', 'end',
-                 'repeat_count', 'peak_length', 'repeat_proportion',
-                 'annotation', 'detailed_annotation', 'gene']
-    mt_df = pd.read_table(master_table_filepath)
-    pivot_table = pd.pivot_table(mt_df, index=peak_cols, columns='sample_name',
-                                 fill_value=0)
-    pivot_table['MACS_score'].to_csv(macs_output, sep='\t', index=False)
-    pivot_table['FE'].to_csv(fe_output, sep='\t', index=False)
-
-
 if __name__ == "__main__":
     parser = OptionParser()
     parser.add_option('--merged_file',

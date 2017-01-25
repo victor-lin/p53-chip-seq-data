@@ -12,3 +12,6 @@ etc/all_samples.anno: concat_sample_annos.py data/SampleAnnos/*.anno
 
 results/ChIP_master_table.txt: master_table.py etc/MACSscore_summary_valid_merged.bed data/mast_out.bed etc/MACSscore_summary_valid_fe.bed data/target.fa etc/MACSscore_summary_valid_merged.anno
 	python master_table.py --merged_file etc/MACSscore_summary_valid_merged.bed --mast_file data/mast_out.bed --samples_file etc/MACSscore_summary_valid_fe.bed --fasta_file data/target.fa --anno_file etc/MACSscore_summary_valid_merged.anno -o results/ChIP_master_table.txt
+
+results/ChIP_master_table_fe.txt: pivot_master_table.py results/ChIP_master_table.txt
+	python pivot_master_table.py -i results/ChIP_master_table.txt --score fe -o results/ChIP_master_table_fe.txt
