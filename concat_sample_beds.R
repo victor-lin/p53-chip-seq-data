@@ -12,6 +12,8 @@ option_list = list(
 opt_parser = OptionParser(option_list=option_list);
 args = parse_args(opt_parser);
 
+base_dir = getwd()
+
 # TODO: check valid directory paths
 
 # summary sample BED dataframe
@@ -29,6 +31,8 @@ for (fname in list.files()) {
         summary.df <- rbind(summary.df, sample.df)
     }
 }
+
+setwd(base_dir)
 
 # FE dataframe
 setwd(args$fe_directory)
@@ -61,5 +65,7 @@ df <- df[, c("chr", "start", "end", "length",
 if (!is.null(args$ignore)) {
     df <- df[df$chr != args$ignore, ]
 }
+
+setwd(base_dir)
 write.table(df, file=args$out_file, sep="\t",
             quote=FALSE, row.names=FALSE, col.names=TRUE)
