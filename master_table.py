@@ -103,22 +103,23 @@ def get_merged_peak_df(options):
     return peaks
 
 
-def get_sample_peak_df(options, seq_sample_attrs):
+def get_sample_peak_df(sample_bed_filepath, seq_sample_attrs=None):
     """Return pandas.DataFrame of sample peak data.
 
     Add additional columns for seq_sample_attrs.
     """
-    samples = pd.read_table(options.samples_file)
-    sample_names = set(samples['sample_name'])
-    sample_obj_map = {sample_name: SeqSample(sample_name)
-                      for sample_name in sample_names}
+    samples = pd.read_table(sample_bed_filepath)
     samples.rename(columns={col: 'sample_' + col
                             for col in ('chr', 'start', 'end', 'length')},
                    inplace=True)
-    samples = samples.merge(samples['sample_name'].apply(lambda s:
-                            pd.Series({attr: getattr(sample_obj_map[s], attr)
-                                       for attr in seq_sample_attrs})),
-                            left_index=True, right_index=True)
+    if seq_sample_attrs:
+        sample_names = set(samples['sample_name'])
+        sample_obj_map = {sample_name: SeqSample(sample_name)
+                          for sample_name in sample_names}
+        samples = samples.merge(samples['sample_name'].apply(lambda s:
+                                pd.Series({attr: getattr(sample_obj_map[s], attr)
+                                           for attr in seq_sample_attrs})),
+                                left_index=True, right_index=True)
     return samples
 
 
@@ -128,7 +129,7 @@ def generate_master_table_melted(options):
                         'treatment_time', 'treatment_repeat']
     peaks = get_merged_peak_df(options)
     # get sample info
-    samples = get_sample_peak_df(options, seq_sample_attrs)
+    samples = get_sample_peak_df(options.samples_file, seq_sample_attrs)
     tbl = sqldf("""SELECT *
                      FROM peaks AS p
                      JOIN samples AS s
