@@ -1,17 +1,31 @@
-etc/MACSscore_summary_valid_fe.bed: concat_sample_beds.R data/SampleBEDs/*.bed data/FEfiles/*.xls
-	Rscript concat_sample_beds.R --bed_directory data/SampleBEDs --fe_directory data/FEfiles --ignore chrM -o etc/MACSscore_summary_valid_fe.bed
+bed_dir := data/SampleBEDs
+fe_dir := data/FEfiles
+anno_dir := data/SampleAnnos
+mast_bed := data/mast_out.bed
+fasta_file := data/target.fa
 
-etc/MACSscore_summary_valid_merged.bed: etc/MACSscore_summary_valid_fe.bed
-	bedtools merge -i <(tail -n+2 etc/MACSscore_summary_valid_fe.bed | sort -k1,1 -k2,2n) > etc/MACSscore_summary_valid_merged.bed
+concat_bed := etc/MACSscore_summary_valid_fe.bed
+merged_bed := etc/MACSscore_summary_valid_merged.bed
+merged_anno := etc/MACSscore_summary_valid_merged.anno
+concat_anno := etc/all_samples.anno
 
-etc/MACSscore_summary_valid_merged.anno: etc/MACSscore_summary_valid_merged.bed
-	annotatePeaks.pl <(cut -f 1,2,3 etc/MACSscore_summary_valid_merged.bed) dm6 > etc/MACSscore_summary_valid_merged.anno
+master_table_melted := results/ChIP_master_table.txt
 
-etc/all_samples.anno: concat_sample_annos.py data/SampleAnnos/*.anno
-	python concat_sample_annos.py --anno_directory data/SampleAnnos --ignore chrM -o etc/all_samples.anno
 
-results/ChIP_master_table.txt: master_table.py etc/MACSscore_summary_valid_merged.bed data/mast_out.bed etc/MACSscore_summary_valid_fe.bed data/target.fa etc/MACSscore_summary_valid_merged.anno
-	python master_table.py --merged_file etc/MACSscore_summary_valid_merged.bed --mast_file data/mast_out.bed --samples_file etc/MACSscore_summary_valid_fe.bed --fasta_file data/target.fa --anno_file etc/MACSscore_summary_valid_merged.anno -o results/ChIP_master_table.txt
+$(concat_bed): concat_sample_beds.R $(bed_dir)/*.bed $(fe_dir)/*.xls
+	Rscript $< --bed_directory $(bed_dir) --fe_directory $(fe_dir) --ignore chrM -o $@
 
-results/ChIP_master_table_fe.txt: pivot_master_table.py results/ChIP_master_table.txt
-	python pivot_master_table.py -i results/ChIP_master_table.txt --score fe -o results/ChIP_master_table_fe.txt
+$(merged_bed): $(concat_bed)
+	tail -n+2 $< | sort -k1,1 -k2,2n | bedtools merge -i - > $@
+
+$(merged_anno): $(merged_bed)
+	cut -f 1,2,3 $< | annotatePeaks.pl dm6 - > $@
+
+$(concat_anno): concat_sample_annos.py $(anno_dir)/*.anno
+	python $< --anno_directory $(anno_dir) --ignore chrM -o $@
+
+$(master_table_melted): master_table.py $(merged_bed) $(mast_bed) $(concat_bed) $(fasta_file) $(merged_anno)
+	python $< --merged_file $(merged_bed) --mast_file $(mast_bed) --samples_file $(concat_bed) --fasta_file $(fasta_file) --anno_file $(merged_anno) -o $@
+
+results/ChIP_master_table_fe.txt: pivot_master_table.py $(master_table_melted)
+	python $< -i $(master_table_melted) --score fe -o $@
