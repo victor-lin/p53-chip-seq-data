@@ -22,7 +22,7 @@ for (fname in list.files()) {
     sample.name <- unlist(strsplit(fname, "_peaks.bed"))
     sample.df <- read.delim(fname, header=FALSE,
                             col.names=c("chr", "start", "end", "PeakID",
-                                        "MACS_score"))
+                                        "MACS"))
     sample.df$sample_name <- sample.name
     if (fname == list.files()[1]) {
         summary.df <- sample.df
@@ -60,7 +60,7 @@ df <- merge(summary.df[, !(names(summary.df) %in% "PeakID")],
 # add length column, reorder columns
 df$length <- df$end - df$start
 df <- df[, c("chr", "start", "end", "length",
-             "sample_name", "MACS_score", "FE")]
+             "sample_name", "MACS", "FE")]
 
 if (!is.null(args$ignore)) {
     df <- df[df$chr != args$ignore, ]

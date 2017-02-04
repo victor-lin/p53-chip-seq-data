@@ -1,7 +1,7 @@
 import argparse
 import pandas as pd
 
-score_to_colname = {'macs': 'MACS_score', 'fe': 'FE'}
+score_to_colname = {'macs': 'MACS', 'fe': 'FE'}
 
 
 def pivot_master_table(master_table_filepath, output, score=None):

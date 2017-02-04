@@ -140,7 +140,7 @@ def generate_master_table_melted(options):
     # output file
     out_columns = (['chr', 'start', 'end', 'sample_name'] + seq_sample_attrs +
                    ['repeat_count', 'peak_length', 'repeat_proportion'] +
-                   ['MACS_score', 'FE'] +
+                   ['MACS', 'FE'] +
                    ['detailed_annotation', 'annotation', 'repeat_type', 'gene'])
     tbl.to_csv(options.out_file, sep='\t', index=False,
                columns=out_columns)
