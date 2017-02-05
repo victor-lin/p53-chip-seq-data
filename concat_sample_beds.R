@@ -6,7 +6,7 @@ option_list = list(
                 help="output filepath", metavar="character"),
     make_option("--fe_directory", type="character", default=NULL,
                 help="FE files directory", metavar="character"),
-    make_option("--ignore", type="character", default=NULL,
+    make_option("--ignore_chr", type="character", default=NULL,
                 help="ignore a chromosome from analysis", metavar="character")
 );
 opt_parser = OptionParser(option_list=option_list);
@@ -62,8 +62,8 @@ df$length <- df$end - df$start
 df <- df[, c("chr", "start", "end", "length",
              "sample_name", "MACS", "FE")]
 
-if (!is.null(args$ignore)) {
-    df <- df[df$chr != args$ignore, ]
+if (!is.null(args$ignore_chr)) {
+    df <- df[df$chr != args$ignore_chr, ]
 }
 
 setwd(base_dir)
