@@ -7,11 +7,14 @@ option_list = list(
     make_option("--fe_directory", type="character", default=NULL,
                 help="FE files directory", metavar="character"),
     make_option("--ignore_chr", type="character", default=NULL,
-                help="ignore a chromosome from analysis", metavar="character")
+                help="ignore a chromosome from analysis", metavar="character"),
+    make_option("--ignore", type="character", default=NULL,
+                help="ignore samples from analysis (separated by ',')", metavar="character")
 );
 opt_parser = OptionParser(option_list=option_list);
 args = parse_args(opt_parser);
 
+ignore_samples <- unlist(strsplit(args$ignore, split=','))
 base_dir = getwd()
 
 # TODO: check valid directory paths
@@ -27,7 +30,7 @@ for (fname in list.files()) {
     if (fname == list.files()[1]) {
         summary.df <- sample.df
     }
-    else {
+    else if (!(sample.name %in% ignore_samples)) {
         summary.df <- rbind(summary.df, sample.df)
     }
 }
