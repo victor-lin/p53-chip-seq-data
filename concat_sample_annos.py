@@ -12,12 +12,7 @@ parser.add_option('-o', '--out_file',
                   help='output filepath')
 parser.add_option('--ignore_chr',
                   help='ignore a chromosome from analysis')
-parser.add_option('--ignore',
-                  help='ignore samples from analysis (separated by ",")')
 (options, args) = parser.parse_args()
-
-ignore_samples = options.ignore.split(',')
-print ignore_samples
 
 fnames = os.walk(options.anno_directory).next()[2]
 for fname in fnames:
@@ -31,7 +26,7 @@ for fname in fnames:
     sample_df['Sample Name'] = sample_name
     if (fname == fnames[0]):
         all_df = sample_df.copy()
-    elif sample_name not in ignore_samples:
+    else:
         all_df = all_df.append(sample_df)
 if options.ignore_chr:
     all_df = all_df[all_df.Chr != options.ignore_chr]
