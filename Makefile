@@ -19,7 +19,7 @@ $(merged_bed): $(concat_bed)
 	tail -n+2 $< | sort -k1,1 -k2,2n | bedtools merge -i - > $@
 
 $(merged_anno): $(merged_bed)
-	cut -f 1,2,3 $< | annotatePeaks.pl dm6 - > $@
+	annotatePeaks.pl $< dm6 > $@
 
 $(fasta_file): $(merged_bed)
 	findMotifsGenome.pl $< /ufrc/zhou/share/genomes/dm6/Sequence/WholeGenomeFasta/genome.fa sample_peaks_mask/ -size given -mask -p 4 -dumpFasta -maxN 1
