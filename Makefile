@@ -2,12 +2,12 @@ bed_dir := data/SampleBEDs
 fe_dir := data/FEfiles
 anno_dir := data/SampleAnnos
 mast_bed := data/mast_out.bed
-fasta_file := data/target.fa
 
 concat_bed := etc/MACSscore_summary_valid_fe.bed
 merged_bed := etc/MACSscore_summary_valid_merged.bed
 merged_anno := etc/MACSscore_summary_valid_merged.anno
 concat_anno := etc/all_samples.anno
+fasta_file := etc/target.fa
 
 master_table_melted := results/ChIP_master_table.txt
 
@@ -20,6 +20,11 @@ $(merged_bed): $(concat_bed)
 
 $(merged_anno): $(merged_bed)
 	cut -f 1,2,3 $< | annotatePeaks.pl dm6 - > $@
+
+$(fasta_file): $(merged_bed)
+	findMotifsGenome.pl $< /ufrc/zhou/share/genomes/dm6/Sequence/WholeGenomeFasta/genome.fa sample_peaks_mask/ -size given -mask -p 4 -dumpFasta -maxN 1
+	mv sample_peaks_mask/ etc/
+	ln -s sample_peaks_mask/target.fa $@
 
 $(concat_anno): concat_sample_annos.py $(anno_dir)/*.anno
 	python $< --anno_directory $(anno_dir) --ignore_chr chrM -o $@
