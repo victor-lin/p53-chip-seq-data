@@ -13,7 +13,9 @@ def generate_master_table_pivoted(options):
                          '_all': lambda x: ','.join(map(str, x))}
 
     # get peaks
-    peaks = get_merged_peak_df(options)
+    peaks = get_merged_peak_df(options.merged_file,
+                               options.fasta_file,
+                               options.anno_file)
     samples = get_sample_peak_df(options.samples_file)
 
     # table DataFrame
@@ -25,7 +27,7 @@ def generate_master_table_pivoted(options):
                                          AND s.sample_end <= p.end)""",
                            locals())
     grouped = merged_samples.groupby(['chr', 'start', 'end'])
-    tbl['sample_count'] = grouped.count()['sample_name'].values
+    tbl['sample_count'] = grouped.agg({"sample_name": lambda x: x.nunique()}).reset_index()['sample_name']
     for sample_name in set(samples['sample_name']):
         tbl[sample_name] = 0
 
