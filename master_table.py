@@ -67,7 +67,7 @@ def get_mast_data(mast_file):
     return mast_out
 
 
-def get_merged_peak_df(options):
+def get_merged_peak_df(merged_file, fasta_file, anno_file):
     """Return pandas.DataFrame of merged peak data.
 
     BED columns:
@@ -86,16 +86,16 @@ def get_merged_peak_df(options):
     * gene
 
     """
-    peaks = pd.read_table(options.merged_file,
+    peaks = pd.read_table(merged_file,
                           header=None, names=('chr', 'start', 'end'))
     # add repeat information
     peaks['repeat_count'] = [seq_record.seq.count('N') for seq_record
-                             in SeqIO.parse(options.fasta_file, 'fasta')]
+                             in SeqIO.parse(fasta_file, 'fasta')]
     peaks['peak_length'] = [len(seq_record) for seq_record
-                            in SeqIO.parse(options.fasta_file, 'fasta')]
+                            in SeqIO.parse(fasta_file, 'fasta')]
     peaks['repeat_proportion'] = 1.0 * peaks['repeat_count'] / peaks['peak_length']
     # annotation data
-    anno = get_anno_df(options.anno_file)
+    anno = get_anno_df(anno_file)
     peaks['detailed_annotation'] = anno['Detailed Annotation']
     peaks['annotation'] = peaks['detailed_annotation'].apply(anno_category)
     peaks['repeat_type'] = peaks['detailed_annotation'].apply(get_repeat_type)
@@ -127,7 +127,9 @@ def generate_master_table_melted(options):
     """Generate master table."""
     seq_sample_attrs = ['cell_type', 'treatment_type',
                         'treatment_time', 'treatment_repeat']
-    peaks = get_merged_peak_df(options)
+    peaks = get_merged_peak_df(options.merged_file,
+                               options.fasta_file,
+                               options.anno_file)
     # get sample info
     samples = get_sample_peak_df(options.samples_file, seq_sample_attrs)
     tbl = sqldf("""SELECT *
