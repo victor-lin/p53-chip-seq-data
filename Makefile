@@ -22,9 +22,7 @@ $(merged_anno): $(merged_bed)
 	annotatePeaks.pl $< dm6 > $@
 
 $(fasta_file): $(merged_bed)
-	findMotifsGenome.pl $< /ufrc/zhou/share/genomes/dm6/Sequence/WholeGenomeFasta/genome.fa sample_peaks_mask/ -size given -mask -p 4 -dumpFasta -maxN 1
-	mv sample_peaks_mask/ etc/
-	ln -s sample_peaks_mask/target.fa $@
+	homerTools extract $< /ufrc/zhou/share/genomes/dm6/Sequence/WholeGenomeFasta/genome.fa -mask -fa > $@
 
 $(concat_anno): concat_sample_annos.py $(anno_dir)/*.anno
 	python $< --anno_directory $(anno_dir) --ignore_chr chrM -o $@
