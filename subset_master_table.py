@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import argparse
-import pd
+import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--master_table', required=True,
