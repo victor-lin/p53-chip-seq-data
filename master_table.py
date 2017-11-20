@@ -1,7 +1,6 @@
 import pandas as pd
 from pandasql import sqldf
 from optparse import OptionParser
-from numpy import log10
 from Bio import SeqIO
 
 from chip_seq import SeqSample
@@ -55,16 +54,6 @@ def get_anno_df(filepath, key=None, other_cols=None):
     anno = anno[key + other_cols].sort_values(by=key)
     anno.reset_index(drop=True, inplace=True)
     return anno
-
-
-def get_mast_data(mast_file):
-    """Return DataFrame from MAST file.
-
-    Generate P53match_score from hit_p.value.
-    """
-    mast_out = pd.read_table(mast_file)
-    mast_out['P53match_score'] = -log10(mast_out['hit_p.value'])
-    return mast_out
 
 
 def get_merged_peak_df(merged_file, fasta_file, anno_file):
@@ -139,7 +128,6 @@ def generate_master_table_melted(options):
                               AND s.sample_end <= p.end)""",
                 locals())
     # TODO: add constraint s.sample_chr = p.chr ?
-    # TODO: add MAST file data
     # output file
     out_columns = (['chr', 'start', 'end', 'sample_name'] + seq_sample_attrs +
                    ['repeat_count', 'peak_length', 'repeat_proportion'] +
@@ -155,8 +143,6 @@ if __name__ == "__main__":
                       help='BED file defining merged regions')
     parser.add_option('--samples_file',
                       help='concatenated samples BED file')
-    parser.add_option('--mast_file',
-                      help='matrix results file')
     parser.add_option('--anno_file',
                       help='annotation file for merged regions')
     parser.add_option('--fasta_file',
