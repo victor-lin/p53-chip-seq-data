@@ -61,7 +61,6 @@ def generate_master_table_pivoted(options):
                                       AND mo.hit_end <= p.end)""",
                         locals())
     grouped2 = merged_mast.groupby(['chr', 'start', 'end'])
-    # TODO: aggregate matrix_id
     grouped_mast = grouped2.agg({'P53match_score':
                                  max_all_functions}).reset_index()
     grouped_mast.columns = map(''.join, grouped_mast.columns.values)
