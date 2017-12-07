@@ -47,3 +47,9 @@ Generate master table in pivoted format:
 1. Use merged regions from `MACSscore_summary_valid_merged.bed`
 1. `mast_out.bed`: join with merged regions (must be contained)
 1. remove ChrM regions
+
+## scripts
+
+`mast_concat.sh`
+
+- concatenate all files in `data/MAST`, write to `etc/mast_concat.bed`. Add column for sample name (derived from filename)
