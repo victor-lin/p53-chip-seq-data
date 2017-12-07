@@ -28,11 +28,7 @@ see [wiki](https://github.com/zhoulab/p53-chip-seq-plots/wiki) for information r
 
 Generate master table in melted format:
 
-    $ make results/ChIP_master_table.txt
-
-Ignore samples: 
-
-    $ make results/ChIP_master_table.txt ignore=<sample1>,<sample2>
+    $ make results/ChIP_master_table_samples.txt
 
 Generate master table in pivoted format:
 
@@ -41,14 +37,35 @@ Generate master table in pivoted format:
 
 ## Procedure
 
-1. Add FE and peak length columns to sample `.bed` files
+1. Add FE and peak length columns to sample `.bed` files, concatenate all samples into one file
 1. Merge using `bedtools`
     1. `MACSscore_summary_valid_merged.bed`
 1. Use merged regions from `MACSscore_summary_valid_merged.bed`
-1. `mast_out.bed`: join with merged regions (must be contained)
-1. remove ChrM regions
+1. Combine information into one table
 
 ## scripts
+
+`concat_sample_beds.R`
+
+- concatenate sample `.bed` files
+- remove `chrM` intervals
+
+`concat_sample_annos.py`
+
+- concatenate sample `.anno` files
+- remove `chrM` intervals
+
+`master_table.py`
+
+- generate melted master table (`results/ChIP_master_table_samples.txt`) from
+    - `etc/MACSscore_summary_valid_merged.bed`
+    - `etc/MACSscore_summary_valid_fe.bed`
+    - `etc/target.fa`
+    - `etc/MACSscore_summary_valid_merged.anno`
+
+`pivot_master_table.py`
+
+- generate pivoted master table (`results/ChIP_master_table_{fe/macs}.txt`) from melted format
 
 `mast_concat.sh`
 

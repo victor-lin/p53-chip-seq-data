@@ -27,7 +27,7 @@ $(fasta_file): $(merged_bed)
 $(concat_anno): concat_sample_annos.py $(anno_dir)/*.anno
 	python $< --anno_directory $(anno_dir) --ignore_chr chrM -o $@
 
-$(master_table_melted): master_table.py $(merged_bed) $(mast_bed) $(concat_bed) $(fasta_file) $(merged_anno)
+$(master_table_melted): master_table.py $(merged_bed) $(concat_bed) $(fasta_file) $(merged_anno)
 	python $< --merged_file $(merged_bed) --samples_file $(concat_bed) --fasta_file $(fasta_file) --anno_file $(merged_anno) -o $@
 
 results/ChIP_master_table_fe.txt: pivot_master_table.py $(master_table_melted)
