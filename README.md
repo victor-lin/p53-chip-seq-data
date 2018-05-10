@@ -1,6 +1,6 @@
-# p53-chip-seq-plots
+# p53-chip-seq-data
 
-see [wiki](https://github.com/zhoulab/p53-chip-seq-plots/wiki) for information regarding master table, figures, and files.
+see wiki for information regarding master table, figures, and files.
 
 ## Requirements
 
