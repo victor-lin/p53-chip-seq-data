@@ -24,7 +24,7 @@ $(merged_bed): $(concat_bed)
 $(merged_anno): $(merged_bed)
 	annotatePeaks.pl $< dm6 > $@
 
-$(merged_fasta_mask): $(merged_bed)
+$(merged_fasta_mask): $(merged_bed_3col)
 	homerTools extract $< /ufrc/zhou/share/genomes/dm6/Sequence/WholeGenomeFasta/genome.fa -mask -fa > $@
 
 $(merged_fasta_softmask): $(merged_bed)
