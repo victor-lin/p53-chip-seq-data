@@ -2,9 +2,9 @@ bed_dir := data/SampleBEDs
 fe_dir := data/FEfiles
 mast_dir := data/MAST
 
-concat_bed := etc/peaks_all_samples.bed  # chr/start/end/length/sample_name/MACS/FE
+concat_bed := etc/peaks_all_samples.bed  # chr/start/end/length/sample_name/MACS_score/FE_score
 merged_bed_3col := etc/peaks_merged_3col.bed  # chr/start/end
-merged_bed := etc/peaks_merged_maxMACS.bed  # chr/start/end/sample_count_distinct/max_MACS
+merged_bed := etc/peaks_merged_maxMACS.bed  # chr/start/end/sample_count_distinct/max_MACS_score
 merged_anno := etc/peaks_merged.anno
 merged_fasta_mask := etc/peaks_merged_mask.fa
 merged_fasta_softmask := etc/peaks_merged_softmask.fa
@@ -33,8 +33,8 @@ $(merged_fasta_softmask): $(merged_bed)
 $(master_table_melted): master_table.py $(merged_bed_3col) $(concat_bed) $(merged_fasta_mask) $(merged_anno)
 	python $< --merged_file $(merged_bed_3col) --samples_file $(concat_bed) --fasta_file $(merged_fasta_mask) --anno_file $(merged_anno) -o $@
 
-$(master_table_new): macs_features.py $(merged_bed) $(merged_fasta_softmask) $(merged_fasta_mask) $(mast_dir)
-	python $< --merged_bed $(merged_bed) --merged_fasta_mask $(merged_fasta_mask) --merged_fasta_softmask $(merged_fasta_softmask) --mast_dir $(mast_dir)
+$(master_table_new): macs_features.py $(merged_bed) $(merged_fasta_softmask) $(mast_dir)
+	python $< --merged_bed $(merged_bed) --merged_fasta_softmask $(merged_fasta_softmask) --mast_dir $(mast_dir)  -o $@
 
 results/ChIP_master_table_fe.txt: pivot_master_table.py $(master_table_melted)
 	python $< --master_table $(master_table_melted) -o $@ --score fe

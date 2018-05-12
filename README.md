@@ -14,7 +14,7 @@ see wiki for information regarding master table, figures, and files.
 * [pandas](http://pandas.pydata.org/)
 * [numpy](http://www.numpy.org/)
 * [pandasql](https://github.com/yhat/pandasql/)
-* [Biopython](http://biopython.org/)
+* [Biopython](http://biopython.org/) >= 1.70
 
 ### Command Line
 

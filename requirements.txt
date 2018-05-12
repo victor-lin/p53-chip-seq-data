@@ -1,0 +1,4 @@
+pandas
+numpy
+pandasql
+biopython>=1.70
