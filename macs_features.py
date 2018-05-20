@@ -1,6 +1,8 @@
 import argparse
-import pandas as pd
+import os
 import itertools
+import pandas as pd
+import numpy as np
 from collections import OrderedDict
 from Bio import SeqIO
 from Bio.SeqUtils import GC
@@ -45,9 +47,54 @@ def output_features(merged_bed, merged_fasta_softmask, mast_dir, output_fp):
     # background features
     df_kmers = pd.DataFrame([get_kmer_dict(seq_record) for seq_record in df_peaks['seq_records']])
     df_peaks = df_peaks.join(df_kmers)
+    # drop unnecessary columns
+    df_peaks.drop(['sample_count_distinct', 'seq_records', 'repeat_count'], axis=1, inplace=True)
 
-    df_peaks.drop(['chr', 'start', 'end', 'sample_count_distinct', 'seq_records', 'repeat_count'], axis=1, inplace=True)
+    # motif features
+    for fn in next(os.walk(mast_dir))[2]:
+        mast_fp = os.path.join(mast_dir, fn)
+        site_name = os.path.splitext(fn)[0]
+        print 'adding site %s' % site_name
+        df_mast_cols = _get_df_mast(mast_fp, site_name, df_peaks)
+        df_peaks = df_peaks.join(df_mast_cols, on=('chr', 'start', 'end'))
+        df_peaks.fillna(0, inplace=True)
+
+    # drop chr,start,end columns
+    df_peaks.drop(['chr', 'start', 'end'], axis=1, inplace=True)
     df_peaks.to_csv(output_fp, sep='\t', index=False)
+
+
+def _get_df_mast(mast_fp, site_name, df_peaks):
+    """Return dataframe with aggregated P53match score and count columns.
+
+    Join with intervals from `df_peaks`, use df_peaks interval identifier as index.
+
+    column : aggregation function
+    - P53match_score_{site_name} : max
+    - P53match_count_{site_name} : len
+    """
+    with open(mast_fp) as f:
+        comments, names = itertools.takewhile(lambda line: line.startswith('#'), f)
+        names = names[1:].split()
+
+    colname_score = 'P53match_score_' + site_name
+    colname_count = 'P53match_count_' + site_name
+
+    df_mast = pd.read_table(mast_fp, comment='#', sep='\s+', index_col=False, header=None, names=names)
+    df_mast[colname_score] = -np.log10(df_mast['hit_p-value'])
+    df_mast.rename(columns={'sequence_name': 'chr'}, inplace=True)
+
+    # merge with chr, start, end from df_peaks
+    df_merge_mast_all = df_peaks.merge(df_mast, on='chr')
+    intersect = (df_merge_mast_all.hit_start >= df_merge_mast_all.start) & (df_merge_mast_all.hit_end <= df_merge_mast_all.end)
+    df_merge_mast_intersect = df_merge_mast_all[intersect]
+    group_merge_mast_intersect = df_merge_mast_intersect.groupby(list(df_peaks.columns))
+
+    df_mast_cols = group_merge_mast_intersect.agg({'hit_p-value': len, colname_score: max}).reset_index()
+    df_mast_cols[colname_count] = df_mast_cols['hit_p-value'].astype(int)
+    df_mast_cols.set_index(['chr', 'start', 'end'], inplace=True)
+    df_mast_cols = df_mast_cols.loc[:, (colname_score, colname_count)]
+    return df_mast_cols
 
 
 def get_kmer_dict(seq_record):

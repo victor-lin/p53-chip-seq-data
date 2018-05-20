@@ -34,7 +34,7 @@ $(master_table_melted): master_table.py $(merged_bed_3col) $(concat_bed) $(merge
 	python $< --merged_file $(merged_bed_3col) --samples_file $(concat_bed) --fasta_file $(merged_fasta_mask) --anno_file $(merged_anno) -o $@
 
 $(master_table_new): macs_features.py $(merged_bed) $(merged_fasta_softmask) $(mast_dir)
-	python $< --merged_bed $(merged_bed) --merged_fasta_softmask $(merged_fasta_softmask) --mast_dir $(mast_dir)  -o $@
+	python $< --merged_bed $(merged_bed) --merged_fasta_softmask $(merged_fasta_softmask) --mast_dir $(mast_dir) -o $@
 
 results/ChIP_master_table_fe.txt: pivot_master_table.py $(master_table_melted)
 	python $< --master_table $(master_table_melted) -o $@ --score fe
