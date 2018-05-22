@@ -23,39 +23,45 @@ see wiki for information regarding master table, figures, and files.
 
 ## Quickstart
 
-    $ module load homer bedtools gcc python R
-    $ source /ufrc/zhou/share/virtualenvs/ve/bin/activate
+Generate MACS data file with negatives:
 
-Generate master table in melted format:
-
-    $ make results/ChIP_master_table_samples.txt
+    $ make results/ChIP_MACS_merged_features.txt
 
 Generate master table in pivoted format:
 
     $ make results/ChIP_master_table_fe.txt
     $ make results/ChIP_master_table_macs.txt
 
-## Procedure
+## Result Files
 
-1. Add FE and peak length columns to sample `.bed` files, concatenate all samples into one file
-1. Merge using `bedtools`
-    1. `MACSscore_summary_valid_merged.bed`
-1. Use merged regions from `MACSscore_summary_valid_merged.bed`
-1. Combine information into one table
+### `ChIP_MACS_merged_features.txt`
 
-## scripts
+Data file with columns:
 
-`concat_sample_beds.R`
+- max_MACS_score
+- length
+- repeat_proportion
+- GC_content
+- 2-mer count proportions (10)
+- 3-mer count proportions (32)
+- P53_match_count (per motif)
+- P53_match_score (per motif)
+
+For each MACS-detected peak from ChIP-seq data, two negative background intervals are generated within 10kb of the original peak.
+
+## Scripts
+
+### `concat_sample_beds.R`
 
 - concatenate sample `.bed` files
 - remove `chrM` intervals
 
-`concat_sample_annos.py`
+### `concat_sample_annos.py`
 
 - concatenate sample `.anno` files
 - remove `chrM` intervals
 
-`master_table.py`
+### `master_table.py`
 
 - generate melted master table (`results/ChIP_master_table_samples.txt`) from
     - `etc/MACSscore_summary_valid_merged.bed`
@@ -63,10 +69,27 @@ Generate master table in pivoted format:
     - `etc/target.fa`
     - `etc/MACSscore_summary_valid_merged.anno`
 
-`pivot_master_table.py`
+### `pivot_master_table.py`
 
 - generate pivoted master table (`results/ChIP_master_table_{fe/macs}.txt`) from melted format
 
-`mast_concat.sh`
+### `concat_mast.sh`
 
 - concatenate all files in `data/MAST`, write to `etc/mast_concat.bed`. Add column for sample name (derived from filename)
+
+### `macs_features.py`
+
+- input
+    - BED file with columns chr/start/end/sample_count_distinct/max_MACS_score
+    - FASTA file (soft-masked) for intervals in BED
+    - directory with MAST result BED files (one per motif)
+- output
+    - data file (see `ChIP_MACS_merged_features.txt` for details)
+
+### `generate_negative_intervals.py`
+
+- input
+    - BED file with columns chr/start/end/sample_count_distinct/max_MACS_score
+    - dm6 chromosome sizes
+- output:
+    - BED file with same columns as input, with 2 negative background intervals per original peak.
