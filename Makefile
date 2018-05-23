@@ -27,7 +27,7 @@ $(merged_bed_with_negative): generate_negative_intervals.py $(merged_bed)
 	python $< --macs_bed $(merged_bed) --chrom_sizes /ufrc/zhou/share/genomes/dm6/dm6.chrom.sizes | sort -k1,1 -k2,2n > $@
 
 $(merged_bed_3col_with_negative): $(merged_bed_with_negative)
-	cut -f 1,2,3 $< | tail -n+2 > $@
+	cut -f 1,2,3 $< > $@
 
 $(merged_anno): $(merged_bed)
 	annotatePeaks.pl $< dm6 > $@

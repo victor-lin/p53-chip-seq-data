@@ -111,7 +111,10 @@ def get_kmer_dict(seq_record):
     counts2 = {kmer: seq_record.seq.upper().count_overlap(kmer) + seq_record.seq.upper().reverse_complement().count_overlap(kmer)
                for kmer in kmers_2}
     sum_counts2 = sum(counts2.values())
-    kmer_dict = OrderedDict((k, 1. * v / sum_counts2) for k, v in counts2.iteritems())
+    if sum_counts2 == 0:
+        kmer_dict = OrderedDict((k, 0) for k, v in counts2.iteritems())
+    else:
+        kmer_dict = OrderedDict((k, 1. * v / sum_counts2) for k, v in counts2.iteritems())
 
     dup_3mers = ['GGG', 'GGC', 'GGT', 'GCG', 'GCT', 'GAG', 'GAT', 'GTG', 'GTC', 'GTT', 'CGG', 'CGT', 'CCT', 'CAT', 'CTG', 'CTT', 'AGT', 'ATT', 'TGG', 'TGC', 'TGA', 'TGT', 'TCG', 'TCC', 'TCT', 'TAG', 'TAC', 'TAT', 'TTG', 'TTC', 'TTA', 'TTT']
     kmers_3 = [''.join(x) for x in itertools.product('GCAT', repeat=3)]
@@ -119,7 +122,10 @@ def get_kmer_dict(seq_record):
     counts3 = {kmer: seq_record.seq.upper().count_overlap(kmer) + seq_record.seq.upper().reverse_complement().count_overlap(kmer)
                for kmer in kmers_3}
     sum_counts3 = sum(counts3.values())
-    kmer_dict.update(OrderedDict((k, 1. * v / sum_counts3) for k, v in counts3.iteritems()))
+    if sum_counts3 == 0:
+        kmer_dict.update(OrderedDict((k, 0) for k, v in counts3.iteritems()))
+    else:
+        kmer_dict.update(OrderedDict((k, 1. * v / sum_counts3) for k, v in counts3.iteritems()))
     return kmer_dict
 
 

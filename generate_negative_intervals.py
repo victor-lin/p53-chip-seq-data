@@ -52,7 +52,7 @@ def output_df_with_negatives(merged_bed_macs, chrom_sizes):
     df_peaks['end'] = df_peaks['end'].astype(int)
 
     df_peaks.drop('length', axis=1, inplace=True)
-    df_peaks.to_csv(sys.stdout, sep='\t', index=False)
+    df_peaks.to_csv(sys.stdout, sep='\t', index=False, header=False)
 
 
 if __name__ == "__main__":
