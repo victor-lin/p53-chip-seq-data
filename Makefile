@@ -12,7 +12,7 @@ merged_fasta_mask := etc/peaks_merged_mask.fa
 merged_fasta_softmask_negative := etc/peaks_merged_softmask_negative.fa
 
 master_table_melted := results/ChIP_master_table_samples.txt
-master_table_new := results/ChIP_MACS_merged_features.txt
+macs_data_file := results/ChIP_MACS_merged_features.txt
 
 $(concat_bed_macs): concat_sample_beds.R $(bed_dir)/*.bed $(fe_dir)/*.xls
 	Rscript $< --bed_directory $(bed_dir) --fe_directory $(fe_dir) --ignore_chr chrM -o $@
@@ -41,8 +41,8 @@ $(merged_fasta_softmask_negative): $(merged_bed_3col_with_negative)
 $(master_table_melted): master_table.py $(merged_bed_3col) $(concat_bed_macs) $(merged_fasta_mask) $(merged_anno)
 	python $< --merged_file $(merged_bed_3col) --samples_file $(concat_bed_macs) --fasta_file $(merged_fasta_mask) --anno_file $(merged_anno) -o $@
 
-$(master_table_new): macs_features.py $(merged_bed) $(merged_fasta_softmask) $(mast_dir)
-	python $< --merged_bed $(merged_bed) --merged_fasta_softmask $(merged_fasta_softmask) --mast_dir $(mast_dir) -o $@
+$(macs_data_file): macs_features.py $(merged_bed_with_negative) $(merged_fasta_softmask_negative) $(mast_dir)
+	python $< --merged_bed $(merged_bed_with_negative) --merged_fasta_softmask $(merged_fasta_softmask_negative) --mast_dir $(mast_dir) -o $@
 
 results/ChIP_master_table_fe.txt: pivot_master_table.py $(master_table_melted)
 	python $< --master_table $(master_table_melted) -o $@ --score fe
