@@ -44,8 +44,12 @@ def output_df_with_negatives(merged_bed_macs, chrom_sizes):
     df_negative2.drop(['high', 'low', 'rand_shift'], axis=1, inplace=True)
     df_negative2.dropna(inplace=True)
 
+    # append negatives to original dataframe
     df_peaks = df_peaks.append(df_negative1)
     df_peaks = df_peaks.append(df_negative2)
+    # int-cast start/end
+    df_peaks['start'] = df_peaks['start'].astype(int)
+    df_peaks['end'] = df_peaks['end'].astype(int)
 
     df_peaks.drop('length', axis=1, inplace=True)
     df_peaks.to_csv(sys.stdout, sep='\t', index=False)
