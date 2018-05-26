@@ -8,6 +8,9 @@ from Bio import SeqIO
 from Bio.SeqUtils import GC
 
 
+reverse_complements = {'A': 'T', 'G': 'C', 'C': 'G', 'T': 'A'}
+
+
 def output_features(merged_bed, merged_fasta_softmask, mast_dir, output_fp):
     """Output data file
 
@@ -45,19 +48,20 @@ def output_features(merged_bed, merged_fasta_softmask, mast_dir, output_fp):
     df_peaks['GC_content'] = [GC(seq_record.seq) for seq_record in df_peaks['seq_records']]
 
     # background features
-    df_kmers = pd.DataFrame([get_kmer_dict(seq_record) for seq_record in df_peaks['seq_records']])
+    k_values = (2, 3)
+    df_kmers = pd.DataFrame([get_kmer_dict(seq_record, k_values) for seq_record in df_peaks['seq_records']])
     df_peaks = df_peaks.join(df_kmers)
     # drop unnecessary columns
     df_peaks.drop(['sample_count_distinct', 'seq_records', 'repeat_count'], axis=1, inplace=True)
 
     # motif features
-    for fn in next(os.walk(mast_dir))[2]:
-        mast_fp = os.path.join(mast_dir, fn)
-        site_name = os.path.splitext(fn)[0]
-        print 'adding site %s' % site_name
-        df_mast_cols = _get_df_mast(mast_fp, site_name, df_peaks)
-        df_peaks = df_peaks.join(df_mast_cols, on=('chr', 'start', 'end'))
-        df_peaks.fillna(0, inplace=True)
+    # for fn in next(os.walk(mast_dir))[2]:
+    #     mast_fp = os.path.join(mast_dir, fn)
+    #     site_name = os.path.splitext(fn)[0]
+    #     print 'adding site %s' % site_name
+    #     df_mast_cols = _get_df_mast(mast_fp, site_name, df_peaks)
+    #     df_peaks = df_peaks.join(df_mast_cols, on=('chr', 'start', 'end'))
+    #     df_peaks.fillna(0, inplace=True)
 
     # drop chr,start,end columns
     df_peaks.drop(['chr', 'start', 'end'], axis=1, inplace=True)
@@ -97,36 +101,47 @@ def _get_df_mast(mast_fp, site_name, df_peaks):
     return df_mast_cols
 
 
-def get_kmer_dict(seq_record):
-    """"Return OrderedDict of 2-mer and 3-mer counts.
+def get_kmer_dict(seq_record, k_values):
+    """"Return OrderedDict of k-mer counts.
 
     Counts are merged forward and backwards strand for reverse complement pairs.
     Remove duplicate kmers after merging reverse complements.
 
+    Parameters
+    ----------
     seq_record : Bio.Seq.Seq object
+    k_values : iterable
+        values of k to determine k-mers
     """
-    dup_2mers = ['GG', 'GT', 'CT', 'TG', 'TC', 'TT']
-    kmers_2 = [''.join(x) for x in itertools.product('GCAT', repeat=2)]
-    kmers_2 = [x for x in kmers_2 if x not in dup_2mers]
-    counts2 = {kmer: seq_record.seq.upper().count_overlap(kmer) + seq_record.seq.upper().reverse_complement().count_overlap(kmer)
-               for kmer in kmers_2}
-    sum_counts2 = sum(counts2.values())
-    if sum_counts2 == 0:
-        kmer_dict = OrderedDict((k, 0) for k, v in counts2.iteritems())
-    else:
-        kmer_dict = OrderedDict((k, 1. * v / sum_counts2) for k, v in counts2.iteritems())
-
-    dup_3mers = ['GGG', 'GGC', 'GGT', 'GCG', 'GCT', 'GAG', 'GAT', 'GTG', 'GTC', 'GTT', 'CGG', 'CGT', 'CCT', 'CAT', 'CTG', 'CTT', 'AGT', 'ATT', 'TGG', 'TGC', 'TGA', 'TGT', 'TCG', 'TCC', 'TCT', 'TAG', 'TAC', 'TAT', 'TTG', 'TTC', 'TTA', 'TTT']
-    kmers_3 = [''.join(x) for x in itertools.product('GCAT', repeat=3)]
-    kmers_3 = [x for x in kmers_3 if x not in dup_3mers]
-    counts3 = {kmer: seq_record.seq.upper().count_overlap(kmer) + seq_record.seq.upper().reverse_complement().count_overlap(kmer)
-               for kmer in kmers_3}
-    sum_counts3 = sum(counts3.values())
-    if sum_counts3 == 0:
-        kmer_dict.update(OrderedDict((k, 0) for k, v in counts3.iteritems()))
-    else:
-        kmer_dict.update(OrderedDict((k, 1. * v / sum_counts3) for k, v in counts3.iteritems()))
+    kmer_dict = OrderedDict()
+    for k in k_values:
+        kmers = get_kmers_unique(k)
+        counts = {kmer: seq_record.seq.upper().count_overlap(kmer) + seq_record.seq.upper().reverse_complement().count_overlap(kmer)
+                  for kmer in kmers}
+        sum_counts = sum(counts.values())
+        if sum_counts == 0:
+            kmer_dict.update(OrderedDict((k, 0) for k, v in counts.iteritems()))
+        else:
+            kmer_dict.update(OrderedDict((k, 1. * v / sum_counts) for k, v in counts.iteritems()))
     return kmer_dict
+
+
+def get_reverse_complement(seq_str):
+    """Return reverse complement of a sequence string."""
+    return ''.join([reverse_complements[base] for base in seq_str[::-1]])
+
+
+def get_kmers_unique(n):
+    """Return list of unique kmers (no duplicate reverse complements)."""
+    kmers_all = [''.join(x) for x in itertools.product('ACGT', repeat=n)]
+    kmers_seen = set()
+    kmers_unique = []
+    for kmer in kmers_all:
+        if get_reverse_complement(kmer) in kmers_seen:
+            continue
+        kmers_seen.add(kmer)
+        kmers_unique.append(kmer)
+    return kmers_unique
 
 
 if __name__ == "__main__":
