@@ -55,13 +55,13 @@ def output_features(merged_bed, merged_fasta_softmask, mast_dir, output_fp):
     df_peaks.drop(['sample_count_distinct', 'seq_records', 'repeat_count'], axis=1, inplace=True)
 
     # motif features
-    # for fn in next(os.walk(mast_dir))[2]:
-    #     mast_fp = os.path.join(mast_dir, fn)
-    #     site_name = os.path.splitext(fn)[0]
-    #     print 'adding site %s' % site_name
-    #     df_mast_cols = _get_df_mast(mast_fp, site_name, df_peaks)
-    #     df_peaks = df_peaks.join(df_mast_cols, on=('chr', 'start', 'end'))
-    #     df_peaks.fillna(0, inplace=True)
+    for fn in next(os.walk(mast_dir))[2]:
+        mast_fp = os.path.join(mast_dir, fn)
+        site_name = os.path.splitext(fn)[0]
+        print 'adding site %s' % site_name
+        df_mast_cols = _get_df_mast(mast_fp, site_name, df_peaks)
+        df_peaks = df_peaks.join(df_mast_cols, on=('chr', 'start', 'end'))
+        df_peaks.fillna(0, inplace=True)
 
     # drop chr,start,end columns
     df_peaks.drop(['chr', 'start', 'end'], axis=1, inplace=True)
