@@ -11,7 +11,7 @@ from Bio.SeqUtils import GC
 reverse_complements = {'A': 'T', 'G': 'C', 'C': 'G', 'T': 'A'}
 
 
-def output_features(merged_bed, merged_fasta_softmask, mast_dir, output_fp):
+def output_features(merged_bed, merged_fasta_softmask, merged_phastcons_bed, mast_dir, output_fp):
     """Output data file
 
     Columns
@@ -54,14 +54,21 @@ def output_features(merged_bed, merged_fasta_softmask, mast_dir, output_fp):
         print 'adding site %s' % site_name
         df_mast_cols = _get_df_mast(mast_fp, site_name, df_peaks.drop(['sample_count_distinct', 'seq_records', 'repeat_count'], axis=1))
         df_peaks = df_peaks.join(df_mast_cols, on=('chr', 'start', 'end'))
-        df_peaks.fillna(0, inplace=True)
+
+    # average phastCon column
+    df_phastcons = pd.read_table(merged_phastcons_bed, header=None,
+                                 na_values='NAN', keep_default_na=False,
+                                 names=('chr', 'start', 'end', 'average_phastCon'))
+    assert len(df_peaks) == len(df_phastcons)
+    df_peaks['average_phastCon'] = df_phastcons['average_phastCon']
+    df_peaks.fillna(0, inplace=True)
 
     # background features
     k_values = (2, 3, 6)
     df_kmers = pd.DataFrame([get_kmer_dict(seq_record, k_values) for seq_record in df_peaks['seq_records']])
     df_peaks = df_peaks.join(df_kmers)
     # drop unnecessary columns
-    df_peaks.drop(['sample_count_distinct', 'seq_records', 'repeat_count'], axis=1, inplace=True)
+    df_peaks.drop(['seq_records', 'repeat_count'], axis=1, inplace=True)
 
     # drop chr,start,end columns
     df_peaks.drop(['chr', 'start', 'end'], axis=1, inplace=True)
@@ -150,9 +157,12 @@ if __name__ == "__main__":
                         help='BED file with columns chr/start/end/sample_count_distinct/max_MACS')
     parser.add_argument('--merged_fasta_softmask', required=True,
                         help='Soft-masked FASTA file for intervals in merged_bed')
+    parser.add_argument('--merged_phastcons_bed', required=True,
+                        help='BED file with columns chr/start/end/average_phastCon. NAN=no data')
     parser.add_argument('--mast_dir', required=True,
                         help='Directory containing MAST files for motifs')
     parser.add_argument('-o', required=True,
                         help='Output filepath')
     args = parser.parse_args()
-    output_features(args.merged_bed, args.merged_fasta_softmask, args.mast_dir, args.o)
+    output_features(args.merged_bed, args.merged_fasta_softmask,
+                    args.merged_phastcons_bed, args.mast_dir, args.o)
