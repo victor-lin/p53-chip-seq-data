@@ -87,11 +87,6 @@ These files are written to the `etc` directory. Columns for non-header BED files
 - concatenate sample `.bed` files
 - remove `chrM` intervals
 
-### `concat_sample_annos.py`
-
-- concatenate sample `.anno` files
-- remove `chrM` intervals
-
 ### `master_table.py`
 
 - generate melted master table (`results/ChIP_master_table_samples.txt`) from
@@ -103,10 +98,6 @@ These files are written to the `etc` directory. Columns for non-header BED files
 ### `pivot_master_table.py`
 
 - generate pivoted master table (`results/ChIP_master_table_{fe/macs}.txt`) from melted format
-
-### `concat_mast.sh`
-
-- concatenate all files in `data/MAST`, write to `etc/mast_concat.bed`. Add column for sample name (derived from filename)
 
 ### `macs_features.py`
 
@@ -124,3 +115,24 @@ These files are written to the `etc` directory. Columns for non-header BED files
     - dm6 chromosome sizes
 - output:
     - BED file with same columns as input, with 2 negative background intervals per original peak.
+
+## `_archive`
+
+### `concat_mast.sh`
+
+- concatenate all files in `data/MAST`, write to `etc/mast_concat.bed`. Add column for sample name (derived from filename)
+
+### `concat_sample_annos.py`
+
+- concatenate sample `.anno` files
+- remove `chrM` intervals
+
+### `data_plots.R`
+
+- pre-defined plotting functions, given a master table file
+
+### `pivot_master_table_source.py`
+
+- old script to generate master table
+
+TODO: add documentation for other scripts
