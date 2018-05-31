@@ -11,6 +11,7 @@ def output_df_with_negatives(merged_bed_macs, chrom_sizes):
     df_peaks = pd.read_table(merged_bed_macs, header=None,
                              names=['chr', 'start', 'end', 'sample_count_distinct', 'max_MACS_score'])
     df_peaks['length'] = df_peaks['end'] - df_peaks['start']
+    df_peaks.insert(3, 'id', df_peaks.index)
 
     # chromosome size constraints define low and high range for random interval shift.
     with open(chrom_sizes) as f:

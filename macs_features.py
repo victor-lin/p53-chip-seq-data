@@ -38,7 +38,7 @@ def output_features(merged_bed, merged_fasta_softmask, merged_phastcons_bed, mas
     """
     # generic features
     df_peaks = pd.read_table(merged_bed, header=None,
-                             names=('chr', 'start', 'end', 'sample_count_distinct', 'max_MACS_score'))
+                             names=('chr', 'start', 'end', 'id', 'sample_count_distinct', 'max_MACS_score'))
     df_peaks['length'] = df_peaks['end'] - df_peaks['start']
     df_peaks['seq_records'] = list(SeqIO.parse(merged_fasta_softmask, 'fasta'))
 

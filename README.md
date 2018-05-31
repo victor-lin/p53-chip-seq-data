@@ -26,9 +26,9 @@ Full commands for generating files can be found in [Makefile](Makefile).
 
 ## Quickstart
 
-Generate MACS data file with negatives:
+Generate unprocessed MACS data file with negatives:
 
-    $ make results/ChIP_MACS_merged_features.txt
+    $ make etc/peaks_merged_features_unprocessed.txt
 
 Generate master table in pivoted format:
 
@@ -37,23 +37,22 @@ Generate master table in pivoted format:
 
 ## Result Files
 
-These files are written to the `results` directory.
+### MACS data file
 
-### `ChIP_MACS_merged_features.txt`
+This file can be generated with `macs_features_preprocess.py`.
 
 Data file with columns:
 
-- sample_count_distinct
-- max_MACS_score
+- binding
 - length
 - repeat_proportion
 - GC_content
+- average_phastCon
+- P53_match_count (per motif)
+- P53_match_score (per motif)
 - 2-mer count proportions (10)
 - 3-mer count proportions (32)
 - 6-mer count proportions (2080)
-- P53_match_count (per motif)
-- P53_match_score (per motif)
-- average_phastCon
 
 For each MACS-detected peak from ChIP-seq data, two negative background intervals are generated within 10kb of the original peak.
 
@@ -79,6 +78,8 @@ These files are written to the `etc` directory. Columns for non-header BED files
     - soft-masked FASTA corresponding to intervals in `peaks_merged_3col.bed`
 - `peaks_phastcons_with_negative.bed`
     - `peaks_merged_3col_with_negative.bed` with additional column for average phastCon score. Intervals with missing score values have `NAN` values (`chr/start/end/average_phastCon_score`)
+- `peaks_merged_features_unprocessed.txt`
+    - unprocessed feature file with columns for MACS score (class label), length, repeat proportion, GC content, k-mers (2,3,6), average conservation score, P53 match count and score for each motif
 
 ## Scripts
 
@@ -106,7 +107,23 @@ These files are written to the `etc` directory. Columns for non-header BED files
     - FASTA file (soft-masked) for intervals in BED
     - directory with MAST result BED files (one per motif)
 - output
-    - data file (see `ChIP_MACS_merged_features.txt` for details)
+    - unprocessed data file (see `peaks_merged_features_unprocessed.txt` for details)
+
+### `macs_features_preprocess.py`
+
+- input
+    - data file from `macs_features.py`
+    - option `--minsamples` (default 1)
+        - minimum number of samples for binding intervals to be included (does not apply to non-binding intervals)
+    - option `maxrep` (default 1)
+        - maximum proportion of repeats for binding intervals to be included (does not apply to non-binding intervals)
+    - subsetting options also remove non-binding intervals that are generated from the binding intervals
+- output
+    - `-o` preprocessed data file
+
+example usage
+
+    python macs_features_preprocess.py --data_file etc/peaks_merged_features_unprocessed.txt --minsamples 2 --maxrep 0.1 -o results/ChIP_MACS_features_minsamples2_maxrep10.txt
 
 ### `generate_negative_intervals.py`
 
