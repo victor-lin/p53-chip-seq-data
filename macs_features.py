@@ -56,6 +56,7 @@ def output_features(merged_bed, merged_fasta_softmask, merged_phastcons_bed, mas
         df_peaks = df_peaks.join(df_mast_cols, on=('chr', 'start', 'end'))
 
     # average phastCon column
+    print 'adding phastCon score feature'
     df_phastcons = pd.read_table(merged_phastcons_bed, header=None,
                                  na_values='NAN', keep_default_na=False,
                                  names=('chr', 'start', 'end', 'average_phastCon'))
@@ -63,6 +64,7 @@ def output_features(merged_bed, merged_fasta_softmask, merged_phastcons_bed, mas
     df_peaks['average_phastCon'] = df_phastcons['average_phastCon']
     df_peaks.fillna(0, inplace=True)
 
+    print 'adding k-mer features'
     # background features
     k_values = (2, 3, 6)
     df_kmers = pd.DataFrame([get_kmer_dict(seq_record, k_values) for seq_record in df_peaks['seq_records']])
@@ -72,6 +74,8 @@ def output_features(merged_bed, merged_fasta_softmask, merged_phastcons_bed, mas
 
     # drop chr,start,end columns
     df_peaks.drop(['chr', 'start', 'end'], axis=1, inplace=True)
+
+    print 'writing output file'
     df_peaks.to_csv(output_fp, sep='\t', index=False)
 
 
