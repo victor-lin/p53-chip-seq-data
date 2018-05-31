@@ -111,19 +111,23 @@ These files are written to the `etc` directory. Columns for non-header BED files
 
 ### `macs_features_preprocess.py`
 
+Subset and split data for training/testing
+
 - input
     - data file from `macs_features.py`
     - option `--minsamples` (default 1)
         - minimum number of samples for binding intervals to be included (does not apply to non-binding intervals)
-    - option `maxrep` (default 1)
+    - option `--maxrep` (default 1)
         - maximum proportion of repeats for binding intervals to be included (does not apply to non-binding intervals)
     - subsetting options also remove non-binding intervals that are generated from the binding intervals
+    - `--test_size` proportion of data to use for testing set
 - output
-    - `-o` preprocessed data file
+    - `--train_out` training data output file
+    - `--test_out` testing data output file
 
 example usage
 
-    python macs_features_preprocess.py --data_file etc/peaks_merged_features_unprocessed.txt --minsamples 2 --maxrep 0.1 -o results/ChIP_MACS_features_minsamples2_maxrep10.txt
+    python macs_features_preprocess.py --data_file etc/peaks_merged_features_unprocessed.txt --minsamples 2 --maxrep 0.1 --test_size 0.5 --train_out results/ChIP_MACS_features_minsamples2_maxrep10_train.txt --test_out results/ChIP_MACS_features_minsamples2_maxrep10_test.txt
 
 ### `generate_negative_intervals.py`
 
