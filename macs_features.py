@@ -216,7 +216,7 @@ def add_seq_features(df_all):
 
 
 def output_3col_bed(df, filepath):
-    df.to_csv(filepath['chr', 'start', 'end'], sep='\t', index=False, header=False)
+    df.loc[:, ('chr', 'start', 'end')].to_csv(filepath, sep='\t', index=False, header=False)
 
 
 if __name__ == "__main__":
