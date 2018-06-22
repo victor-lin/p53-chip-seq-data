@@ -1,4 +1,5 @@
 import argparse
+import subprocess
 import os
 import itertools
 import pandas as pd
@@ -7,77 +8,13 @@ from collections import OrderedDict
 from Bio import SeqIO
 from Bio.SeqUtils import GC
 
+from bed import BedFile, Interval
 
 reverse_complements = {'A': 'T', 'G': 'C', 'C': 'G', 'T': 'A'}
+genome_seq_records = None  # force this variable to be global
 
-
-def output_features(merged_bed, merged_fasta_softmask, merged_phastcons_bed, mast_dir, output_fp):
-    """Output data file
-
-    Columns
-    - max_MACS_score
-    - length
-    - repeat_proportion
-    - GC_content
-    - conservation score
-    - kmer_counts
-
-
-    Parameters
-    ----------
-    merged_bed : str
-        filepath of BED file with columns chr/start/end/sample_count_distinct/max_MACS_score
-    merged_fasta_mask : str
-        filepath of masked FASTA file for intervals in merged_bed
-    merged_fasta_softmask : str
-        filepath of soft-masked FASTA file for intervals in merged_bed
-    mast_dir : str
-        path of directory containing MAST files for motifs
-    output_fp : str
-        filepath of output file
-    """
-    # generic features
-    df_peaks = pd.read_table(merged_bed, header=None,
-                             names=('chr', 'start', 'end', 'id', 'sample_count_distinct', 'max_MACS_score'))
-    df_peaks['length'] = df_peaks['end'] - df_peaks['start']
-    df_peaks['seq_records'] = list(SeqIO.parse(merged_fasta_softmask, 'fasta'))
-
-    df_peaks['repeat_count'] = [sum(map(seq_record.seq.count, ['g', 'c', 'a', 't']))
-                                for seq_record in df_peaks['seq_records']]
-    df_peaks['repeat_proportion'] = 1.0 * df_peaks['repeat_count'] / df_peaks['length']
-    df_peaks['GC_content'] = [GC(seq_record.seq) for seq_record in df_peaks['seq_records']]
-
-    # average phastCon column
-    print 'adding phastCon score feature'
-    df_phastcons = pd.read_table(merged_phastcons_bed, header=None,
-                                 na_values='NAN', keep_default_na=False,
-                                 names=('chr', 'start', 'end', 'average_phastCon'))
-    assert len(df_peaks) == len(df_phastcons)
-    df_peaks['average_phastCon'] = df_phastcons['average_phastCon']
-
-    # motif features
-    for fn in next(os.walk(mast_dir))[2]:
-        mast_fp = os.path.join(mast_dir, fn)
-        site_name = os.path.splitext(fn)[0]
-        print 'adding site %s' % site_name
-        df_mast_cols = _get_df_mast(mast_fp, site_name, df_peaks.loc[:, ['chr', 'start', 'end']])
-        df_peaks = df_peaks.join(df_mast_cols, on=('chr', 'start', 'end'))
-
-    print 'adding k-mer features'
-    # background features
-    k_values = (2, 3, 6)
-    df_kmers = pd.DataFrame([get_kmer_dict(seq_record, k_values) for seq_record in df_peaks['seq_records']])
-    df_peaks = df_peaks.join(df_kmers)
-
-    # drop unnecessary columns
-    df_peaks.drop(['chr', 'start', 'end', 'seq_records', 'repeat_count'],
-                  axis=1, inplace=True)
-
-    # fill NA with 0
-    df_peaks.fillna(0, inplace=True)
-
-    print 'writing output file'
-    df_peaks.to_csv(output_fp, sep='\t', index=False)
+rs = 0  # random seed
+np.random.seed(rs)
 
 
 def _get_df_mast(mast_fp, site_name, df_peaks):
@@ -156,18 +93,203 @@ def get_kmers_unique(n):
     return kmers_unique
 
 
+def generate_nonbinding_intervals(bed_df, genome_seq_records, maxrep,
+                                  min_dist, max_dist, step, empty_columns):
+    """Return dataframe of nonbinding intervals given conditions
+
+    Parameters
+    ----------
+    bed_df : pd.Dataframe
+        dataframe of binding intervals (chr/start/end)
+    genome_seq_records : dict of {chr_name: Bio.Seq.Seq}
+        dict of per-chromosome sequence objects
+    maxrep : float
+        Maximum proportion of repeats for binding intervals to be included
+    min_dist : int
+        minimum distance from binding interval to select from
+    max_dist : int
+        maximum distance from binding interval to select from
+    step : int
+        increment for `min_dist` and `max_dist` when no possible negative intervals are available
+    empty_columns : list of str
+        columns to be included with NA values
+
+    NOTE: id is assumed to be range(0, len(bed_df))
+    """
+    bf = BedFile(bed_df)
+    df = pd.DataFrame(columns=['chr', 'start', 'end', 'id'])
+
+    chrom_sizes_dict = {chrom: len(genome_seq_records[chrom])
+                        for chrom in genome_seq_records}
+
+    for i, interval in enumerate(bf.intervals):
+        print 'interval {} out of {}'.format(i + 1, len(bf.intervals))
+        chrom = interval.chrom
+        start = interval.start
+        end = interval.end
+        length = interval.length
+
+        lower = max(0, start - max_dist)
+        upper = max(0, start - min_dist)
+        left = None
+        while not left:
+            print '\tsearching in ({}, {})'.format(lower, upper)
+            left = generate_random_interval(chrom, lower, upper, length, genome_seq_records,
+                                            maxrep, avoid_intervals=bf.intervals)
+            lower = max(0, lower - step)
+            upper = max(0, upper - step)
+            if lower == upper:
+                print 'reached chromosome boundary. cannot search next iteration'
+                break
+        if left:
+            df.loc[len(df)] = [left.chrom, left.start, left.end, i]
+
+        lower = min(chrom_sizes_dict[chrom], end + min_dist)
+        upper = min(chrom_sizes_dict[chrom], end + max_dist)
+        right = None
+        while not right:
+            print '\tsearching in ({}, {})'.format(lower, upper)
+            right = generate_random_interval(chrom, lower, upper, length, genome_seq_records,
+                                             maxrep, avoid_intervals=bf.intervals)
+            lower = max(0, lower + step)
+            upper = max(0, upper + step)
+            if lower == upper:
+                print 'reached chromosome boundary. cannot search next iteration'
+                break
+        if right:
+            df.loc[len(df)] = [right.chrom, right.start, right.end, i]
+
+    df['start'] = df['start'].astype(int)
+    df['end'] = df['end'].astype(int)
+    df['id'] = df['id'].astype(int)
+    for col_name in empty_columns:
+        df[col_name] = 0
+    return df
+
+
+def generate_random_interval(chrom, lower, upper, length, genome_seq_records, maxrep=1.0,
+                             avoid_intervals=None, min_distance=None):
+    """Generate random interval given constraints.
+
+    min_distance requires avoid_intervals
+    """
+
+    # TODO: check parameter values
+    # TODO: implement min_distance
+
+    possible_intervals = set([Interval(chrom, start, start + length)
+                              for start in range(lower, upper - length)])
+
+    possible_intervals_copy = set(possible_intervals)
+    for interval in possible_intervals_copy:
+        # check overlaps
+        for avoid_interval in avoid_intervals:
+            if interval.overlaps(avoid_interval):
+                possible_intervals.remove(interval)
+                break
+        if interval not in possible_intervals:
+            continue
+
+        # check repeat proportion
+        seq_record = genome_seq_records[chrom].seq[interval.start:interval.end]
+        rep_prop = 1. * sum(map(seq_record.count, ['g', 'c', 'a', 't'])) / length
+        if rep_prop > maxrep:
+            possible_intervals.remove(interval)
+
+    if not possible_intervals:
+        return None
+    return np.random.choice(list(possible_intervals))
+
+
+def add_seq_features(df_all):
+    """Requires dataframe columns chr/start/end
+    Adds columns for length, repeat_proportion, GC_content
+    """
+    df_all['length'] = df_all['end'] - df_all['start']
+    df_all['seq_records'] = [genome_seq_records[interval['chr']][interval['start']:interval['end']]
+                             for i, interval in df_all.iterrows()]
+    df_all['repeat_count'] = [sum(map(seq_record.seq.count, ['g', 'c', 'a', 't']))
+                              for seq_record in df_all['seq_records']]
+    df_all['repeat_proportion'] = 1.0 * df_all['repeat_count'] / df_all['length']
+    df_all['GC_content'] = [GC(seq_record.seq) for seq_record in df_all['seq_records']]
+    return df_all
+
+
+def output_3col_bed(df, filepath):
+    df.to_csv(filepath['chr', 'start', 'end'], sep='\t', index=False, header=False)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--merged_bed', required=True,
                         help='BED file with columns chr/start/end/sample_count_distinct/max_MACS')
-    parser.add_argument('--merged_fasta_softmask', required=True,
-                        help='Soft-masked FASTA file for intervals in merged_bed')
-    parser.add_argument('--merged_phastcons_bed', required=True,
-                        help='BED file with columns chr/start/end/average_phastCon. NAN=no data')
     parser.add_argument('--mast_dir', required=True,
                         help='Directory containing MAST files for motifs')
+    parser.add_argument('--genome_fasta', required=True,
+                        help='FASTA file for genome (one sequence per chromosome)')
+    parser.add_argument('--genome_phastcons_file', required=True,
+                        help='BED file with columns chr/start/end/phastCon')
+    parser.add_argument('--minsamples', required=False, type=int, default=1,
+                        help='minimum number of samples for binding intervals to be included (does not apply to non-binding intervals)')
+    parser.add_argument('--maxrep', required=False, type=float, default=1.0,
+                        help='maximum proportion of repeats for binding intervals to be included')
     parser.add_argument('-o', required=True,
                         help='Output filepath')
     args = parser.parse_args()
-    output_features(args.merged_bed, args.merged_fasta_softmask,
-                    args.merged_phastcons_bed, args.mast_dir, args.o)
+
+    print 'reading genome FASTA...'
+    genome_seq_records = {x.name: x for x in SeqIO.parse(args.genome_fasta, 'fasta')}
+
+    print 'reading binding intervals...'
+    df_binding = pd.read_table(args.merged_bed, header=None,
+                               names=('chr', 'start', 'end', 'sample_count_distinct', 'max_MACS_score'))
+    # add 'id' column
+    df_binding.insert(3, 'id', df_binding.index)
+    # add sequence features
+    df_binding = add_seq_features(df_binding)
+    # subset by minsamples and maxrep
+    rows_binding_drop = (df_binding['sample_count_distinct'] < args.minsamples) | (df_binding['repeat_proportion'] > args.maxrep)
+    df_binding = df_binding[~rows_binding_drop].copy()
+
+    print 'generating nonbinding intervals...'
+    df_nonbinding = generate_nonbinding_intervals(df_binding,
+                                                  genome_seq_records,
+                                                  args.maxrep, 1000, 10000, step=10000,
+                                                  empty_columns=['sample_count_distinct', 'max_MACS_score'])
+    # add sequence features
+    df_nonbinding = add_seq_features(df_nonbinding)
+
+    df_all = df_binding.append(df_nonbinding)
+
+    print 'adding k-mer features'
+    k_values = (2, 3)
+    df_kmers = pd.DataFrame([get_kmer_dict(seq_record, k_values) for seq_record in df_all['seq_records']])
+    df_all = pd.concat([df_all.reset_index(drop=True), df_kmers], axis=1)
+
+    print 'adding phastcons...'
+    bed_3col_file = 'etc/tmp_3col.bed'
+    bed_3col_with_avgcons = 'etc/tmp_3col_phastcons.bed'
+    output_3col_bed(df_all, bed_3col_file)
+    cmd_list = ['bedmap', '--echo', '--delim "\t"', '--mean',
+                bed_3col_file, args.genome_phastcons_file, '>', bed_3col_with_avgcons]
+    subprocess.call(' '.join(cmd_list))
+
+    df_phastcons = pd.read_table(bed_3col_with_avgcons, header=None,
+                                 na_values='NAN', keep_default_na=False,
+                                 names=('chr', 'start', 'end', 'average_phastCon'))
+    assert len(df_all) == len(df_phastcons)
+    df_all['average_phastCon'] = df_phastcons['average_phastCon']
+
+    print 'adding MAST scores...'
+    for fn in next(os.walk(args.mast_dir))[2]:
+        mast_fp = os.path.join(args.mast_dir, fn)
+        site_name = os.path.splitext(fn)[0]
+        print '\tadding site %s' % site_name
+        df_mast_cols = _get_df_mast(mast_fp, site_name, df_all.loc[:, ['chr', 'start', 'end']])
+        df_all = df_all.join(df_mast_cols, on=('chr', 'start', 'end'))
+
+    # drop unnecessary columns, fill NA with 0
+    df_all.drop(['chr', 'start', 'end', 'seq_records', 'repeat_count'],
+                axis=1, inplace=True)
+    df_all.fillna(0, inplace=True)
+    df_all.to_csv(args.o, sep='\t', index=False)
