@@ -34,7 +34,7 @@ etc/peaks_all.txt: etc/peaks_binding_merged_subset.txt etc/peaks_nonbinding.txt
 	(cat etc/peaks_binding_merged_subset.txt; tail -n+2 etc/peaks_nonbinding.txt) > $@
 
 etc/peaks_all.bed: etc/peaks_all.txt
-	tail -n+2 etc/peaks_all.txt > $@
+	cut -f1,2,3 etc/peaks_all.txt | tail -n+2 > $@
 
 etc/peaks_all_phastcons.bed: etc/peaks_all.bed $(dm6_genome_phastcons)
 	bedmap --echo --delim "\t" --mean etc/peaks_all.bed $(dm6_genome_phastcons) > $@
