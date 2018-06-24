@@ -31,10 +31,12 @@ etc/peaks_nonbinding.txt: scripts/generate_nonbinding_peaks.py etc/peaks_binding
 			  -o $@
 
 etc/peaks_all.txt: etc/peaks_binding_merged_subset.txt etc/peaks_nonbinding.txt
-	(cat etc/peaks_binding_merged_subset.txt; tail -n+2 etc/peaks_nonbinding.txt) > $@
+	(head -n1 etc/peaks_binding_merged_subset.txt; \
+	 ((tail -n+2 etc/peaks_binding_merged_subset.txt; \
+	   tail -n+2 etc/peaks_nonbinding.txt) | sort -k1,1 -k2,2n)) > $@
 
 etc/peaks_all.bed: etc/peaks_all.txt
-	cut -f1,2,3 etc/peaks_all.txt | tail -n+2 | sort -k1,1 -k2,2n > $@
+	cut -f1,2,3 etc/peaks_all.txt | tail -n+2 > $@
 
 etc/peaks_all_phastcons.bed: etc/peaks_all.bed $(dm6_genome_phastcons)
 	bedmap --echo --delim "\t" --mean etc/peaks_all.bed $(dm6_genome_phastcons) > $@
