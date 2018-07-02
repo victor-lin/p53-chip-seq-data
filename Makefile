@@ -8,6 +8,7 @@ dm6_genome_phastcons := $(dm6_dir)/phastCons27way/dm6.27way.phastCons.bed
 
 MINSAMPLES := 2
 MAXREP := 0.1
+N_NONBINDING_INTERVALS := 5
 
 TEST_SIZE := 0.5
 train_out := etc/peaks_merged_features_train.txt
@@ -28,6 +29,7 @@ etc/peaks_nonbinding.txt: scripts/generate_nonbinding_peaks.py etc/peaks_binding
 	python $< --binding_peaks etc/peaks_binding_merged_subset.txt \
 			  --genome_fasta $(dm6_genome_fasta) \
 			  --maxrep $(MAXREP) \
+			  --num_intervals_per_side $(N_NONBINDING_INTERVALS) \
 			  -o $@
 
 etc/peaks_all.txt: etc/peaks_binding_merged_subset.txt etc/peaks_nonbinding.txt
