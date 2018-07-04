@@ -18,18 +18,21 @@ def get_df_mast(mast_fp, site_name, df_peaks):
     Join with intervals from `df_peaks`, use df_peaks interval identifier as index.
 
     column : aggregation function
-    - P53match_score_{site_name} : max
+    - P53match_score_max_{site_name} : max
+    - P53match_score_sum_{site_name} : sum
     - P53match_count_{site_name} : len
     """
     with open(mast_fp) as f:
         comments, names = itertools.takewhile(lambda line: line.startswith('#'), f)
         names = names[1:].split()
 
-    colname_score = 'P53match_score_' + site_name
+    colname_score_max = 'P53match_score_max_' + site_name
+    colname_score_sum = 'P53match_score_sum_' + site_name
     colname_count = 'P53match_count_' + site_name
 
     df_mast = pd.read_table(mast_fp, comment='#', sep='\s+', index_col=False, header=None, names=names)
-    df_mast[colname_score] = -np.log10(df_mast['hit_p-value'])
+    df_mast[colname_score_max] = -np.log10(df_mast['hit_p-value'])
+    df_mast[colname_score_sum] = -np.log10(df_mast['hit_p-value'])
     df_mast.rename(columns={'sequence_name': 'chr'}, inplace=True)
 
     # merge with chr, start, end from df_peaks
@@ -38,10 +41,12 @@ def get_df_mast(mast_fp, site_name, df_peaks):
     df_merge_mast_intersect = df_merge_mast_all[intersect]
     group_merge_mast_intersect = df_merge_mast_intersect.groupby(list(df_peaks.columns))
 
-    df_mast_cols = group_merge_mast_intersect.agg({'hit_p-value': len, colname_score: max}).reset_index()
+    df_mast_cols = group_merge_mast_intersect.agg({'hit_p-value': len,
+                                                   colname_score_max: max,
+                                                   colname_score_sum: sum}).reset_index()
     df_mast_cols[colname_count] = df_mast_cols['hit_p-value'].astype(int)
     df_mast_cols.set_index(['chr', 'start', 'end'], inplace=True)
-    df_mast_cols = df_mast_cols.loc[:, (colname_score, colname_count)]
+    df_mast_cols = df_mast_cols.loc[:, (colname_score_max, colname_score_sum, colname_count)]
     return df_mast_cols
 
 
