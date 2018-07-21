@@ -14,7 +14,7 @@ N_NONBINDING_INTERVALS := 5
 TEST_SIZE := 0.5
 datafile_appendix := minsamples_$(MINSAMPLES)__rep_$(REP_THRESHOLD_TYPE)$(REP_CUTOFF)__nonbinding_$(N_NONBINDING_INTERVALS)
 train_out := etc/peaks_merged_features_train__$(datafile_appendix).txt
-test_out := etc/peaks_merged_features_test$(datafile_appendix).txt
+test_out := etc/peaks_merged_features_test__$(datafile_appendix).txt
 
 etc/peaks_binding_all_samples.txt: scripts/concat_sample_beds.R $(bed_dir)/*.bed $(fe_dir)/*.xls
 	Rscript $< --bed_directory $(bed_dir) --fe_directory $(fe_dir) --ignore_chr chrM -o $@
