@@ -8,8 +8,10 @@ rs = 0
 np.random.seed(rs)
 
 
-def generate_nonbinding_intervals(bed_df, genome_seq_records, maxrep,
-                                  min_dist, max_dist, step, num_intervals_per_side,
+def generate_nonbinding_intervals(bed_df, genome_seq_records,
+                                  rep_threshold_type, rep_cutoff,
+                                  min_dist, max_dist, step,
+                                  num_intervals_per_side,
                                   empty_columns, output_fp):
     """Return dataframe of nonbinding intervals given conditions
 
@@ -19,12 +21,14 @@ def generate_nonbinding_intervals(bed_df, genome_seq_records, maxrep,
         dataframe of binding intervals (chr/start/end)
     genome_seq_records : dict of {chr_name: Bio.Seq.Seq}
         dict of per-chromosome sequence objects
-    maxrep : float
-        Maximum proportion of repeats for binding intervals to be included
+    rep_threshold_type : str (min/max)
+        repeat proportion threshold type for binding intervals to be included
+    rep_cutoff : float
+        cutoff value for rep_threshold_type
     min_dist : int
-        minimum distance from binding interval to select from
+        minimum distance from binding interval for selection
     max_dist : int
-        maximum distance from binding interval to select from
+        maximum distance from binding interval for selection
     step : int
         increment for `min_dist` and `max_dist` when no possible negative intervals are available
     num_intervals_per_side : int
@@ -55,7 +59,8 @@ def generate_nonbinding_intervals(bed_df, genome_seq_records, maxrep,
         while len(lefts) == 0:
             print '\tsearching in ({}, {})'.format(lower, upper)
             lefts = generate_random_intervals(chrom, lower, upper, length,
-                                              genome_seq_records, maxrep,
+                                              genome_seq_records,
+                                              rep_threshold_type, rep_cutoff,
                                               avoid_intervals=bf.intervals,
                                               n=num_intervals_per_side)
             lower = max(0, lower - step)
@@ -72,7 +77,8 @@ def generate_nonbinding_intervals(bed_df, genome_seq_records, maxrep,
         while len(rights) == 0:
             print '\tsearching in ({}, {})'.format(lower, upper)
             rights = generate_random_intervals(chrom, lower, upper, length,
-                                               genome_seq_records, maxrep,
+                                               genome_seq_records,
+                                               rep_threshold_type, rep_cutoff,
                                                avoid_intervals=bf.intervals,
                                                n=num_intervals_per_side)
             lower = max(0, lower + step)
@@ -92,7 +98,8 @@ def generate_nonbinding_intervals(bed_df, genome_seq_records, maxrep,
     df.to_csv(output_fp, sep='\t', index=False)
 
 
-def generate_random_intervals(chrom, lower, upper, length, genome_seq_records, maxrep=1.0,
+def generate_random_intervals(chrom, lower, upper, length, genome_seq_records,
+                              rep_threshold_type, rep_cutoff,
                               avoid_intervals=None, n=1, min_distance=None):
     """Return iterable of random intervals given constraints.
 
@@ -118,7 +125,9 @@ def generate_random_intervals(chrom, lower, upper, length, genome_seq_records, m
         # check repeat proportion
         seq_record = genome_seq_records[chrom].seq[interval.start:interval.end]
         rep_prop = 1. * sum(map(seq_record.count, ['g', 'c', 'a', 't'])) / length
-        if rep_prop > maxrep:
+        if rep_threshold_type == 'max' and rep_prop > rep_cutoff:
+            possible_intervals.remove(interval)
+        if rep_threshold_type == 'min' and rep_prop < rep_cutoff:
             possible_intervals.remove(interval)
     if not possible_intervals:
         return []
@@ -133,8 +142,10 @@ if __name__ == "__main__":
                         help='tab-delimited file with columns chr/start/end/id/...')
     parser.add_argument('--genome_fasta', required=True,
                         help='FASTA file for genome (one sequence per chromosome)')
-    parser.add_argument('--maxrep', required=False, type=float, default=1.0,
-                        help='maximum proportion of repeats for binding intervals to be included')
+    parser.add_argument('--rep_threshold_type', required=True, type=str, choices=['min', 'max'],
+                        help='(min/max) repeat proportion threshold type for binding intervals to be included')
+    parser.add_argument('--rep_cutoff', required=True, type=float,
+                        help='cutoff value for rep_threshold_type')
     parser.add_argument('--num_intervals_per_side', required=False, type=int, default=1,
                         help='number of intervals to generate per left/right')
     parser.add_argument('-o', required=True,
@@ -145,7 +156,8 @@ if __name__ == "__main__":
 
     genome_seq_records = get_genome_seq_records_dict(args.genome_fasta)
     generate_nonbinding_intervals(df_binding, genome_seq_records,
-                                  args.maxrep, 1000, 10000, step=10000,
+                                  args.rep_threshold_type, args.rep_cutoff,
+                                  1000, 10000, step=10000,
                                   num_intervals_per_side=args.num_intervals_per_side,
                                   empty_columns=['sample_count_distinct', 'max_MACS_score'],
                                   output_fp=args.o)

@@ -7,12 +7,14 @@ dm6_genome_fasta := $(dm6_dir)/Sequence/WholeGenomeFasta/genome.fa
 dm6_genome_phastcons := $(dm6_dir)/phastCons27way/dm6.27way.phastCons.bed
 
 MINSAMPLES := 2
-MAXREP := 0.1
+REP_THRESHOLD_TYPE := max
+REP_CUTOFF := 0.1
 N_NONBINDING_INTERVALS := 5
 
 TEST_SIZE := 0.5
-train_out := etc/peaks_merged_features_train.txt
-test_out := etc/peaks_merged_features_test.txt
+datafile_appendix := minsamples_$(MINSAMPLES)__rep_$(REP_THRESHOLD_TYPE)$(REP_CUTOFF)__nonbinding_$(N_NONBINDING_INTERVALS)
+train_out := etc/peaks_merged_features_train__$(datafile_appendix).txt
+test_out := etc/peaks_merged_features_test$(datafile_appendix).txt
 
 etc/peaks_binding_all_samples.txt: scripts/concat_sample_beds.R $(bed_dir)/*.bed $(fe_dir)/*.xls
 	Rscript $< --bed_directory $(bed_dir) --fe_directory $(fe_dir) --ignore_chr chrM -o $@
@@ -22,13 +24,16 @@ etc/peaks_binding_merged_maxMACS.bed: etc/peaks_binding_all_samples.txt
 
 etc/peaks_binding_merged_subset.txt: scripts/subset_binding_peaks.py etc/peaks_binding_merged_maxMACS.bed
 	python $< --merged_bed etc/peaks_binding_merged_maxMACS.bed \
-			  --minsamples $(MINSAMPLES) --maxrep $(MAXREP) \
+			  --minsamples $(MINSAMPLES) \
+			  --rep_threshold_type $(REP_THRESHOLD_TYPE) \
+			  --rep_cutoff $(REP_CUTOFF) \
 			  --genome_fasta $(dm6_genome_fasta) > $@
 
 etc/peaks_nonbinding.txt: scripts/generate_nonbinding_peaks.py etc/peaks_binding_merged_subset.txt
 	python $< --binding_peaks etc/peaks_binding_merged_subset.txt \
 			  --genome_fasta $(dm6_genome_fasta) \
-			  --maxrep $(MAXREP) \
+			  --rep_threshold_type $(REP_THRESHOLD_TYPE) \
+			  --rep_cutoff $(REP_CUTOFF) \
 			  --num_intervals_per_side $(N_NONBINDING_INTERVALS) \
 			  -o $@
 
