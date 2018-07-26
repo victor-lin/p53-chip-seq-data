@@ -18,7 +18,7 @@ Full commands for generating files can be found in [Makefile](Makefile).
 * [pandasql](https://github.com/yhat/pandasql/)
 * [Biopython](http://biopython.org/) >= 1.70
 
-### Command Line
+### Command line tools
 
 * [bedtools](http://bedtools.readthedocs.io/)
 * [BEDOPS](http://bedops.readthedocs.io/)
@@ -26,35 +26,36 @@ Full commands for generating files can be found in [Makefile](Makefile).
 
 ## Quickstart
 
-Generate unprocessed MACS data file with negatives:
+Generate train/test data files with nonbinding intervals:
 
-    $ make etc/peaks_merged_features_unprocessed.txt
+    $ make train_test_split
 
-Generate master table in pivoted format:
+Files are generated in the `etc` directory.
 
-    $ make results/ChIP_master_table_fe.txt
-    $ make results/ChIP_master_table_macs.txt
+## Data File Format
 
-## Result Files
+Files generated when calling `make train_test_split`.
 
-### MACS data file
+Options (defined in Makefile):
 
-This file can be generated with `macs_features_preprocess.py`.
+- minimum number of samples
+- repeat threshold type
+- repeat threshold cutoff
+- number of nonbinding intervals to generate per binding interval (within 10kb)
 
-Data file with columns:
+Columns:
 
-- binding
+- binding (0 or 1)
 - length
 - repeat_proportion
 - GC_content
 - average_phastCon
 - P53_match_count (per motif)
-- P53_match_score (per motif)
+- P53_match_score_max (per motif)
+- P53_match_score_sum (per motif)
 - 2-mer count proportions (10)
 - 3-mer count proportions (32)
 - 6-mer count proportions (2080)
-
-For each MACS-detected peak from ChIP-seq data, two negative background intervals are generated within 10kb of the original peak.
 
 ## Generated Files
 
@@ -80,80 +81,3 @@ These files are written to the `etc` directory. Columns for non-header BED files
     - `peaks_merged_3col_with_negative.bed` with additional column for average phastCon score. Intervals with missing score values have `NAN` values (`chr/start/end/average_phastCon_score`)
 - `peaks_merged_features_unprocessed.txt`
     - unprocessed feature file with columns for MACS score (class label), length, repeat proportion, GC content, k-mers (2,3,6), average conservation score, P53 match count and score for each motif
-
-## Scripts
-
-### `concat_sample_beds.R`
-
-- concatenate sample `.bed` files
-- remove `chrM` intervals
-
-### `master_table.py`
-
-- generate melted master table (`results/ChIP_master_table_samples.txt`) from
-    - `etc/MACSscore_summary_valid_merged.bed`
-    - `etc/MACSscore_summary_valid_fe.bed`
-    - `etc/target.fa`
-    - `etc/MACSscore_summary_valid_merged.anno`
-
-### `pivot_master_table.py`
-
-- generate pivoted master table (`results/ChIP_master_table_{fe/macs}.txt`) from melted format
-
-### `macs_features.py`
-
-- input
-    - BED file with columns chr/start/end/sample_count_distinct/max_MACS_score
-    - FASTA file (soft-masked) for intervals in BED
-    - directory with MAST result BED files (one per motif)
-- output
-    - unprocessed data file (see `peaks_merged_features_unprocessed.txt` for details)
-
-### `macs_features_preprocess.py`
-
-Subset and split data for training/testing
-
-- input
-    - data file from `macs_features.py`
-    - option `--minsamples` (default 1)
-        - minimum number of samples for binding intervals to be included (does not apply to non-binding intervals)
-    - option `--maxrep` (default 1)
-        - maximum proportion of repeats for binding intervals to be included (does not apply to non-binding intervals)
-    - subsetting options also remove non-binding intervals that are generated from the binding intervals
-    - `--test_size` proportion of data to use for testing set
-- output
-    - `--train_out` training data output file
-    - `--test_out` testing data output file
-
-example usage
-
-    python macs_features_preprocess.py --data_file etc/peaks_merged_features_unprocessed.txt --minsamples 2 --maxrep 0.1 --test_size 0.5 --train_out results/ChIP_MACS_features_minsamples2_maxrep10_train.txt --test_out results/ChIP_MACS_features_minsamples2_maxrep10_test.txt
-
-### `generate_negative_intervals.py`
-
-- input
-    - BED file with columns chr/start/end/sample_count_distinct/max_MACS_score
-    - dm6 chromosome sizes
-- output:
-    - BED file with same columns as input, with 2 negative background intervals per original peak.
-
-## `_archive`
-
-### `concat_mast.sh`
-
-- concatenate all files in `data/MAST`, write to `etc/mast_concat.bed`. Add column for sample name (derived from filename)
-
-### `concat_sample_annos.py`
-
-- concatenate sample `.anno` files
-- remove `chrM` intervals
-
-### `data_plots.R`
-
-- pre-defined plotting functions, given a master table file
-
-### `pivot_master_table_source.py`
-
-- old script to generate master table
-
-TODO: add documentation for other scripts

@@ -1,0 +1,24 @@
+- `chip_seq.py`
+    - `SeqSample` object with sample-specific attributes
+- `concat_mast.sh`
+    - concatenate all files in `data/MAST`, write to `etc/mast_concat.bed`. Add column for sample name (derived from filename)
+- `concat_sample_annos.py`
+    - concatenate sample `.anno` files
+    - remove `chrM` intervals
+- `data_plots.R`
+    - pre-defined plotting functions, given a master table file
+- `master_table.py`
+    - generate melted master table (`results/ChIP_master_table_samples.txt`) from
+        - `etc/MACSscore_summary_valid_merged.bed`
+        - `etc/MACSscore_summary_valid_fe.bed`
+        - `etc/target.fa`
+        - `etc/MACSscore_summary_valid_merged.anno`
+- `pivot_master_table.py`
+    - generate pivoted master table (`results/ChIP_master_table_{fe/macs}.txt`) from melted format
+- `pivot_master_table_source.py`
+    - old script to generate master table
+- `subset_master_table.py`
+    - subset pivoted master table with 3 options:
+        - max MACS score column only
+        - >1 samples only
+        - P53match_score > 6
