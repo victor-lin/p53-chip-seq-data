@@ -10,6 +10,7 @@ from helper_functions import get_genome_seq_records_dict
 
 
 reverse_complements = {'A': 'T', 'G': 'C', 'C': 'G', 'T': 'A'}
+k_values = (2, 3, 4, 5, 6)
 
 
 def get_df_mast(mast_fp, site_name, df_peaks):
@@ -126,7 +127,6 @@ if __name__ == "__main__":
     df_all['average_phastCon'] = df_phastcons['average_phastCon']
 
     print 'adding k-mer features'
-    k_values = (2, 3, 4, 5, 6)
     df_kmers = pd.DataFrame([get_kmer_dict(seq_record, k_values)
                              for seq_record in df_all['seq_records']])
     df_all = pd.concat([df_all.reset_index(drop=True), df_kmers], axis=1)
