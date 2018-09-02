@@ -9,7 +9,7 @@ dm6_genome_phastcons := $(dm6_dir)/phastCons27way/dm6.27way.phastCons.bed
 MINSAMPLES := 2
 REP_THRESHOLD_TYPE := max
 REP_CUTOFF := 0.1
-N_NONBINDING_INTERVALS := 5
+N_NONBINDING_INTERVALS := 20
 
 TEST_SIZE := 0.5
 datafile_appendix := minsamples_$(MINSAMPLES)__rep_$(REP_THRESHOLD_TYPE)$(REP_CUTOFF)__nonbinding_$(N_NONBINDING_INTERVALS)
