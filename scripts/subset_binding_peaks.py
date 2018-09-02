@@ -5,9 +5,8 @@ import pandas as pd
 from helper_functions import get_genome_seq_records_dict, peak_file_cols
 
 
-def _subset_binding_peaks(merged_bed, minsamples, rep_threshold_type, rep_cutoff, genome_fasta):
-    genome_seq_records = get_genome_seq_records_dict(genome_fasta)
-
+def _subset_binding_peaks(merged_bed, minsamples, rep_threshold_type,
+                          rep_cutoff, genome_seq_records):
     df_binding = pd.read_table(merged_bed, header=None,
                                names=('chr', 'start', 'end',
                                       'sample_count_distinct', 'max_MACS_score'))
@@ -49,6 +48,7 @@ if __name__ == "__main__":
                         help='FASTA file for genome (one sequence per chromosome)')
     args = parser.parse_args()
 
+    genome_seq_records = get_genome_seq_records_dict(args.genome_fasta)
     _subset_binding_peaks(args.merged_bed, args.minsamples,
                           args.rep_threshold_type, args.rep_cutoff,
-                          args.genome_fasta)
+                          genome_seq_records)
