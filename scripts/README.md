@@ -1,7 +1,12 @@
-- `bed.py`
+# scripts
+
 - `concat_sample_beds.R`
     - concatenate sample `.bed` files
     - remove `chrM` intervals
+
+## binding_dataset
+
+- `bed.py`
 - `generate_nonbinding_peaks.py`
     - input
         - BED file with columns chr/start/end/sample_count_distinct/max_MACS_score
@@ -30,3 +35,23 @@
         - `--train_out` training data output file
         - `--test_out` testing data output file
 - `subset_binding_peaks.py`
+
+## master_table
+
+- `chip_seq.py`
+    - `SeqSample` object with sample-specific attributes
+- `master_table.py`
+    - generate melted master table (`results/ChIP_master_table_samples.txt`) from
+        - `etc/MACSscore_summary_valid_merged.bed`
+        - `etc/MACSscore_summary_valid_fe.bed`
+        - `etc/target.fa`
+        - `etc/MACSscore_summary_valid_merged.anno`
+- `pivot_master_table.py`
+    - generate pivoted master table (`results/ChIP_master_table_{fe/macs}.txt`) from melted format
+- `pivot_master_table_source.py`
+    - old script to generate master table
+- `subset_master_table.py`
+    - subset pivoted master table with 3 options:
+        - max MACS score column only
+        - >1 samples only
+        - P53match_score > 6
