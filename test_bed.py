@@ -1,4 +1,4 @@
-from scripts.bed import Interval
+from scripts.binding_dataset.bed import Interval
 
 
 def test_bed_module():
