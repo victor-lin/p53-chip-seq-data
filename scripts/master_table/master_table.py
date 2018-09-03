@@ -124,10 +124,10 @@ def generate_master_table_melted(options):
     tbl = sqldf("""SELECT *
                      FROM peaks AS p
                      JOIN samples AS s
-                          ON (s.sample_start >= p.start
+                          ON (s.sample_chr == p.chr
+                              AND s.sample_start >= p.start
                               AND s.sample_end <= p.end)""",
                 locals())
-    # TODO: add constraint s.sample_chr = p.chr ?
     # output file
     out_columns = (['chr', 'start', 'end', 'sample_name'] + seq_sample_attrs +
                    ['repeat_count', 'peak_length', 'repeat_proportion'] +
