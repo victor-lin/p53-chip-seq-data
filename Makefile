@@ -84,9 +84,9 @@ train_test_split: scripts/binding_dataset/peak_features_preprocess.py $(datafile
 
 # MASTER TABLE VARIABLES/TARGETS
 
-master_table_melted := results/datafiles/ChIP_master_table_melted.txt
-master_table_fe := results/datafiles/ChIP_master_table_fe.txt
-master_table_macs := results/datafiles/ChIP_master_table_macs.txt
+master_table_melted := etc/ChIP_peaks_master_table_melted.txt
+master_table_fe := results/datafiles/ChIP_peaks_master_table_fe.txt
+master_table_macs := results/datafiles/ChIP_peaks_master_table_macs.txt
 
 etc/peaks_binding_merged.bed: etc/peaks_binding_all_samples.txt
 	# merged ChIP-seq intervals from all samples
@@ -101,18 +101,18 @@ etc/peaks_binding_merged.fa: etc/peaks_binding_merged.bed
 	# FASTA sequences for peaks_binding_merged.bed
 	homerTools extract $< $(dm6_genome_fasta) -mask -fa > $@
 
-$(master_table_melted): scripts/master_table/master_table.py etc/peaks_binding_merged.bed etc/peaks_binding_all_samples.txt etc/peaks_binding_merged.fa etc/peaks_binding_merged.anno
+master_table_melted: scripts/master_table/master_table.py etc/peaks_binding_merged.bed etc/peaks_binding_all_samples.txt etc/peaks_binding_merged.fa etc/peaks_binding_merged.anno
 	# master table with one row per sample
 	python $< --merged_file etc/peaks_binding_merged.bed \
 			  --samples_file etc/peaks_binding_all_samples.txt \
 			  --fasta_file etc/peaks_binding_merged.fa \
 			  --anno_file etc/peaks_binding_merged.anno \
-			  -o $@
+			  -o $(master_table_melted)
 
-$(master_table_fe): scripts/master_table/pivot_master_table.py $(master_table_melted)
+master_table_fe: scripts/master_table/pivot_master_table.py $(master_table_melted)
 	# master table FE scores in sample columns
-	python $< --master_table $(master_table_melted) -o $@ --score fe
+	python $< --master_table $(master_table_melted) -o $(master_table_fe) --score fe
 
-$(master_table_macs): scripts/master_table/pivot_master_table.py $(master_table_melted)
+master_table_macs: scripts/master_table/pivot_master_table.py $(master_table_melted)
 	# master table MACS scores in sample columns
-	python $< --master_table $(master_table_melted) -o $@ --score macs
+	python $< --master_table $(master_table_melted) -o $(master_table_macs) --score macs
