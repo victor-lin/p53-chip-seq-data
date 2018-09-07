@@ -12,12 +12,17 @@ def pivot_master_table(master_table_filepath, output, score):
                  'detailed_annotation', 'annotation', 'repeat_type', 'gene']
     mt_df = pd.read_table(master_table_filepath)
     mt_df['repeat_type'] = mt_df['repeat_type'].fillna('dummy')
-    pivot_table = pd.pivot_table(mt_df, index=peak_cols, columns='sample_name',
+    sample_cols = pd.pivot_table(mt_df, index=peak_cols, columns='sample_name',
                                  fill_value=0)
-
-    out_df = pivot_table[score_to_colname[score]]
-    sample_count_vals = mt_df.groupby(peak_cols).agg({'sample_name': lambda x: x.nunique()})['sample_name']
-    out_df.insert(0, 'sample_count', sample_count_vals)
+    sample_cols = sample_cols[score_to_colname[score]]
+    peak_agg_cols = mt_df.groupby(peak_cols).agg({'MACS': max,
+                                                  'FE': max,
+                                                  'sample_name': lambda x: x.nunique()})
+    peak_agg_cols.rename({'MACS': 'maxMACS',
+                          'FE': 'maxFE',
+                          'sample_name': 'sample_count'},
+                         axis=1, inplace=True)
+    out_df = pd.concat([peak_agg_cols, sample_cols], axis=1)
     out_df = out_df.reset_index().replace('dummy', np.nan)
     out_df.to_csv(output, sep='\t', index=False)
 
