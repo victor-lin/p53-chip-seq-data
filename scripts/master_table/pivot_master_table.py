@@ -18,8 +18,8 @@ def pivot_master_table(master_table_filepath, output, score):
     peak_agg_cols = mt_df.groupby(peak_cols).agg({'MACS': max,
                                                   'FE': max,
                                                   'sample_name': lambda x: x.nunique()})
-    peak_agg_cols.rename({'MACS': 'maxMACS',
-                          'FE': 'maxFE',
+    peak_agg_cols.rename({'MACS': 'MACS_max',
+                          'FE': 'FE_max',
                           'sample_name': 'sample_count'},
                          axis=1, inplace=True)
     out_df = pd.concat([peak_agg_cols, sample_cols], axis=1)
