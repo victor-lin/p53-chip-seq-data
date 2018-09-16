@@ -11,6 +11,7 @@ from helper_functions import get_genome_seq_records_dict
 
 reverse_complements = {'A': 'T', 'G': 'C', 'C': 'G', 'T': 'A'}
 k_values = (2, 3, 4, 5, 6)
+mast_filename_suffix = '_meme-chip_mast'
 
 
 def get_df_mast(mast_fp, site_name, df_peaks):
@@ -135,6 +136,8 @@ if __name__ == "__main__":
     for fn in next(os.walk(args.mast_dir))[2]:
         mast_fp = os.path.join(args.mast_dir, fn)
         site_name = os.path.splitext(fn)[0]
+        if mast_filename_suffix in site_name:
+            site_name = site_name.split(mast_filename_suffix)[0]
         print '\tadding site %s' % site_name
         df_mast_cols = get_df_mast(mast_fp, site_name, df_all.loc[:, ['chr', 'start', 'end']])
         df_all = df_all.join(df_mast_cols, on=('chr', 'start', 'end'))
