@@ -3,11 +3,13 @@ import pandas as pd
 
 from sklearn_plot_helper_functions import (
     get_svc_coefficients,
+    get_svc_rfe_rankings,
     get_all_weights_plot,
     get_motif_weights_plot,
 )
 
-figures_dir = '../../results/figures'
+results_dir = '../../results'
+figures_dir = os.path.join(results_dir, 'figures')
 if not os.path.exists(figures_dir):
     print 'making directory {}'.format(figures_dir)
     os.makedirs(figures_dir)
@@ -55,6 +57,25 @@ def plot_svc_rep():
     save_path = os.path.join(figures_dir, 'all_weights_svc_rep.png')
     plt.savefig(save_path, bbox_inches='tight')
     plt.clf()
+
+
+def save_svc_rfe_rankings():
+    # nonrep
+    ranking_values = get_svc_rfe_rankings(df_train_nonrep, df_test_nonrep)
+    feature_rankings = zip(ranking_values, df_train_nonrep.columns[1:])
+    df = pd.DataFrame(zip(*sorted(feature_rankings)))
+    df = df.transpose()
+    df.columns = ['rank', 'feature_name']
+    save_path = os.path.join(results_dir, 'svc_rfe_rankings_nonrep.txt')
+    df.to_csv(save_path, index=False, sep='\t')
+
+    # rep
+    ranking_values = get_svc_rfe_rankings(df_train_rep, df_test_rep)
+    feature_rankings = zip(ranking_values, df_train_rep.columns[1:])
+    df = pd.DataFrame(zip(*sorted(feature_rankings)))
+    df.columns = ['rank', 'feature_name']
+    save_path = os.path.join(results_dir, 'svc_rfe_rankings_rep.txt')
+    df.to_csv(save_path, index=False, sep='\t')
 
 
 if __name__ == '__main__':
