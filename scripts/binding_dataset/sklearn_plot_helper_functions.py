@@ -169,8 +169,8 @@ def get_svc_param_plot(df_train, df_test):
         imp = [abs(x) for x in clf.coef_[0]]
         imp, names = zip(*sorted(zip(imp, names), reverse=True)[:20])
 
-        mcc = roc_auc_score(y_test, y_pred)
-        roc_auc = matthews_corrcoef(y_test, y_pred)
+        mcc = matthews_corrcoef(y_test, y_pred)
+        roc_auc = roc_auc_score(y_test, y_pred)
         mccs.append(mcc)
         roc_aucs.append(roc_auc)
 
