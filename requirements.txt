@@ -2,4 +2,5 @@ pandas
 numpy
 pandasql
 biopython>=1.70
+scikit-learn
 pytest

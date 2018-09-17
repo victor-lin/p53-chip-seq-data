@@ -8,7 +8,6 @@ Full commands for generating files can be found in [Makefile](Makefile).
 
 ### R
 
-* [ggplot2](http://ggplot2.org/)
 * [optparse](https://github.com/trevorld/optparse/)
 
 ### Python
@@ -28,11 +27,9 @@ Full commands for generating files can be found in [Makefile](Makefile).
 
 ### Quickstart
 
-Generate train/test data files with nonbinding intervals:
+Generate train/test data files with non-binding intervals:
 
     $ make train_test_split
-
-Files are generated in the `etc` directory.
 
 ### Data File Format
 
@@ -43,7 +40,7 @@ Options (defined in Makefile):
 - minimum number of samples (`MINSAMPLES`)
 - repeat threshold type (`REP_THRESHOLD_TYPE`)
 - repeat threshold cutoff (`REP_CUTOFF`)
-- number of nonbinding intervals to generate per binding interval (`N_NONBINDING_INTERVALS`)
+- number of non-binding intervals to generate on each side per binding interval (`N_NONBINDING_INTERVALS`)
 	- Searches within [1kb, 10kb] on both sides of the binding interval, then +10kb increments if needed.
 
 Columns:
@@ -53,39 +50,37 @@ Columns:
 - repeat_proportion
 - GC_content
 - average_phastCon
-- P53_match_count (per motif)
-- P53_match_score_max (per motif)
-- P53_match_score_sum (per motif)
+- P53match_count (per motif)
+- P53match_score_max (per motif)
+- P53match_score_sum (per motif)
 - 2-mer count proportions (10)
 - 3-mer count proportions (32)
 - 6-mer count proportions (2080)
 
 ### Generated Files
 
-- `etc/peaks_binding_all_samples.txt`
-- `etc/peaks_binding_merged_maxMACS.bed`
-- `etc/peaks_binding_merged_subset.txt`
-- `etc/peaks_nonbinding.txt`
-- `etc/peaks_all.txt`
-- `etc/peaks_all.bed`
-- `etc/peaks_all_phastcons.bed`
+1. Full unprocessed data file: `etc/peaks_merged_features__minsamples_{int}__rep_{max/min}{0-1}__nonbinding_{int}.txt`
+2. Training set: `results/datafiles/peaks_merged_features__minsamples_{int}__rep_{max/min}{0-1}__nonbinding_{int}-preprocessed_train.txt`
+3. Testing set: `results/datafiles/peaks_merged_features__minsamples_{int}__rep_{max/min}{0-1}__nonbinding_{int}-preprocessed_test.txt`
 
-- `etc/peaks_merged_features__minsamples_{int}__rep_{max/min}{0-1}__nonbinding_{int}.txt`
-- `etc/peaks_merged_features_train__minsamples_{int}__rep_{max/min}{0-1}__nonbinding_{int}.txt`
-- `etc/peaks_merged_features_test__minsamples_{int}__rep_{max/min}{0-1}__nonbinding_{int}.txt`
+The full file (1) is unprocessed.
+
+The `TEST_SIZE` variable in `Makefile` determines train/test split ratio for files (2) and (3). Default 1:1. Split is based on binding intervals only – non-binding intervals follow the same split as the respective binding interval it was derived from. These files are used in the machine learning process described below.
+
+### Machine Learning Analysis
+
+Model used: [`sklearn.svm.SVC`](http://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html) – Support Vector Classifier, based on Support Vector Machine.
+
+Ranking mthod: [`sklearn.feature_selection.RFE`](http://scikit-learn.org/stable/modules/generated/sklearn.feature_selection.RFE.html) – Recursive Feature Elimination.
 
 ## Master Table
 
 ### Quickstart
 
-Generate master table in melted format:
+Generate master table with either max FE or max MACS score under sample columns:
 
-    $ make results/ChIP_master_table_samples.txt
-
-Generate master table in pivoted format:
-
-    $ make results/ChIP_master_table_fe.txt
-    $ make results/ChIP_master_table_macs.txt
+    $ make results/datafiles/ChIP_peaks_master_table_fe.txt
+    $ make results/datafiles/ChIP_peaks_master_table_macs.txt
 
 ### Procedure
 
@@ -94,10 +89,3 @@ Generate master table in pivoted format:
     1. `MACSscore_summary_valid_merged.bed`
 1. Use merged regions from `MACSscore_summary_valid_merged.bed`
 1. Combine information into one table
-
-### Generated Files
-
-- `etc/peaks_binding_all_samples.txt`
-- `etc/peaks_binding_merged.bed`
-- `etc/peaks_binding_merged.anno`
-- `etc/peaks_binding_merged.fa`
