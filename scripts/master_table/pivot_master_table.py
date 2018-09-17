@@ -13,7 +13,7 @@ def pivot_master_table(master_table_filepath, output, score):
     mt_df = pd.read_table(master_table_filepath)
     mt_df['repeat_type'] = mt_df['repeat_type'].fillna('dummy')
     sample_cols = pd.pivot_table(mt_df, index=peak_cols, columns='sample_name',
-                                 fill_value=0)
+                                 aggfunc=max, fill_value=0)
     sample_cols = sample_cols[score_to_colname[score]]
     peak_agg_cols = mt_df.groupby(peak_cols).agg({'MACS': max,
                                                   'FE': max,
