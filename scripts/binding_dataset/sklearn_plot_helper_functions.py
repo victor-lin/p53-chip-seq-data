@@ -5,6 +5,7 @@ import re
 from sklearn.svm import SVC
 from sklearn.metrics import (
     classification_report,
+    confusion_matrix,
     matthews_corrcoef,
     roc_auc_score
 )
@@ -32,6 +33,7 @@ def get_svc_coefficients(df_train, df_test):
     clf.fit(X_train, y_train)
 
     print classification_report(y_test, clf.predict(X_test))
+    print confusion_matrix(y_test, clf.predict(X_test))
     return clf.coef_[0]
 
 
@@ -51,6 +53,7 @@ def get_svc_rfe_rankings(df_train, df_test):
     selector = selector.fit(X_train, y_train)
 
     print classification_report(y_test, selector.predict(X_test))
+    print confusion_matrix(y_test, selector.predict(X_test))
     return selector.ranking_
 
 
@@ -69,6 +72,7 @@ def get_xgboost_importances(df_train, df_test):
     clf.fit(X_train, y_train)
 
     print classification_report(y_test, clf.predict(X_test))
+    print confusion_matrix(y_test, clf.predict(X_test))
     return clf.feature_importances_
 
 
