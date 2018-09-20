@@ -11,6 +11,7 @@ from sklearn.metrics import (
 )
 from sklearn.feature_selection import RFE
 from xgboost.sklearn import XGBClassifier
+from sklearn.model_selection import GridSearchCV
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -74,6 +75,28 @@ def get_xgboost_importances(df_train, df_test):
     print classification_report(y_test, clf.predict(X_test))
     print confusion_matrix(y_test, clf.predict(X_test))
     return clf.feature_importances_
+
+
+def get_svc_gridsearch_clf(df_train, df_test, C_values):
+    """Return C-tuned SVC classifier based on Grid Search.
+
+    - tune linaer SVC with balanced class weights
+    - scoring function: MCC
+    - print classification report
+    """
+    X_train = df_train.iloc[:, 1:].values
+    y_train = df_train.iloc[:, 0].values
+    X_test = df_test.iloc[:, 1:].values
+    y_test = df_test.iloc[:, 0].values
+
+    params = {'C': C_values}
+    clf = GridSearchCV(SVC(kernel='linear', class_weight='balanced'),
+                       params, cv=3, scoring='recall')
+    clf.fit(X_train, y_train)
+
+    print classification_report(y_test, clf.predict(X_test))
+    print confusion_matrix(y_test, clf.predict(X_test))
+    return clf
 
 
 def get_abs_feature_weights_dict(weights, names):
