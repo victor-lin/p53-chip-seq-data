@@ -73,6 +73,7 @@ def save_svc_rfe_rankings():
     ranking_values = get_svc_rfe_rankings(df_train_rep, df_test_rep)
     feature_rankings = zip(ranking_values, df_train_rep.columns[1:])
     df = pd.DataFrame(zip(*sorted(feature_rankings)))
+    df = df.transpose()
     df.columns = ['rank', 'feature_name']
     save_path = os.path.join(results_dir, 'svc_rfe_rankings_rep.txt')
     df.to_csv(save_path, index=False, sep='\t')
