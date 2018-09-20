@@ -138,7 +138,7 @@ def get_all_weights_plot(weights, names, xmax, title=None):
     return plt
 
 
-def get_gridserach_scores_plot(grid_clf, C_values):
+def get_gridsearch_scores_plot(grid_clf, C_values):
     """Return plot of validation scores from a gridsearch over values for C parameter of SVC."""
     scores = [x.mean_validation_score for x in grid_clf.grid_scores_]
     # score_stds = [np.std(x.cv_validation_scores) for x in grid_clf.grid_scores_]
