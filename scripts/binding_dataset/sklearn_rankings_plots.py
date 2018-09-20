@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 
 import matplotlib
@@ -7,8 +8,10 @@ matplotlib.use('Agg')
 from sklearn_plot_helper_functions import (
     get_svc_coefficients,
     get_svc_rfe_rankings,
+    get_svc_gridsearch_clf,
     get_all_weights_plot,
     get_motif_weights_plot,
+    get_gridsearch_scores_plot
 )
 
 results_dir = '../../results'
@@ -29,9 +32,17 @@ fp_test_rep = '../../results/datafiles/peaks_merged_features_test__minsamples_2_
 df_train_rep = pd.read_table(fp_train_rep)
 df_test_rep = pd.read_table(fp_test_rep)
 
+C_values = np.logspace(-13, 0, num=14, base=2)
+
 
 def plot_svc_nonrep():
-    weights = get_svc_coefficients(df_train_nonrep, df_test_nonrep)
+    clf = get_svc_gridsearch_clf(df_train_nonrep, df_test_nonrep, C_values)
+    weights = clf.best_estimator_.coef_[0]
+
+    plt = get_gridsearch_scores_plot(clf, C_values)
+    save_path = os.path.join(figures_dir, 'gridsearch_nonrep.png')
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.clf()
 
     plt = get_motif_weights_plot(weights, df_train_nonrep.columns[1:], 0.7,
                                  'SVC motif feature weights (nonrepetitive)')
@@ -47,7 +58,13 @@ def plot_svc_nonrep():
 
 
 def plot_svc_rep():
-    weights = get_svc_coefficients(df_train_rep, df_test_rep)
+    clf = get_svc_gridsearch_clf(df_train_rep, df_test_rep, C_values)
+    weights = clf.best_estimator_.coef_[0]
+
+    plt = get_gridsearch_scores_plot(clf, C_values)
+    save_path = os.path.join(figures_dir, 'gridsearch_nonrep.png')
+    plt.savefig(save_path, bbox_inches='tight')
+    plt.clf()
 
     plt = get_motif_weights_plot(weights, df_train_rep.columns[1:], 0.7,
                                  'SVC motif feature weights (repetitive)')
