@@ -48,7 +48,8 @@ $(peaks_binding_merged_subset): scripts/binding_dataset/subset_binding_peaks.py 
 			  --minsamples $(MINSAMPLES) \
 			  --rep_threshold_type $(REP_THRESHOLD_TYPE) \
 			  --rep_cutoff $(REP_CUTOFF) \
-			  --genome_fasta $(dm6_genome_fasta) > $@
+			  --genome_fasta $(dm6_genome_fasta) \
+			  -o $@
 
 $(peaks_nonbinding): scripts/binding_dataset/generate_nonbinding_peaks.py $(peaks_binding_merged_subset)
 	# generated nonbinding peaks with sample_count_distinct, max_MACS_score = 0

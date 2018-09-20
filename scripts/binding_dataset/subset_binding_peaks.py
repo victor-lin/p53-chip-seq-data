@@ -1,12 +1,11 @@
 import argparse
-import sys
 import pandas as pd
 
 from helper_functions import get_genome_seq_records_dict, peak_file_cols
 
 
 def _subset_binding_peaks(merged_bed, minsamples, rep_threshold_type,
-                          rep_cutoff, genome_seq_records):
+                          rep_cutoff, output_fp, genome_seq_records):
     df_binding = pd.read_table(merged_bed, header=None,
                                names=('chr', 'start', 'end',
                                       'sample_count_distinct', 'max_MACS_score'))
@@ -31,7 +30,7 @@ def _subset_binding_peaks(merged_bed, minsamples, rep_threshold_type,
                     axis=1, inplace=True)
     df_binding.insert(3, 'id', df_binding.index)
     assert list(df_binding.columns) == peak_file_cols
-    df_binding.to_csv(sys.stdout, sep='\t', index=False)
+    df_binding.to_csv(output_fp, sep='\t', index=False)
 
 
 if __name__ == "__main__":
@@ -46,9 +45,11 @@ if __name__ == "__main__":
                         help='cutoff value for rep_threshold_type')
     parser.add_argument('--genome_fasta', required=True,
                         help='FASTA file for genome (one sequence per chromosome)')
+    parser.add_argument('-o', required=True,
+                        help='output filepath')
     args = parser.parse_args()
 
     genome_seq_records = get_genome_seq_records_dict(args.genome_fasta)
     _subset_binding_peaks(args.merged_bed, args.minsamples,
-                          args.rep_threshold_type, args.rep_cutoff,
+                          args.rep_threshold_type, args.rep_cutoff, args.o,
                           genome_seq_records)
