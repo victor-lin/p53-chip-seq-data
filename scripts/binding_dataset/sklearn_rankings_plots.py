@@ -1,6 +1,9 @@
 import os
 import pandas as pd
 
+import matplotlib
+matplotlib.use('Agg')
+
 from sklearn_plot_helper_functions import (
     get_svc_coefficients,
     get_svc_rfe_rankings,
