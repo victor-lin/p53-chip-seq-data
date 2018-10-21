@@ -31,10 +31,10 @@ datafile_full := results/datafiles/peaks_merged_features__$(all_suffixes).txt
 datafile_train := results/datafiles/peaks_merged_features_train__$(all_suffixes).txt
 datafile_test := results/datafiles/peaks_merged_features_test__$(all_suffixes).txt
 
-etc/peaks_binding_all_samples.txt: scripts/concat_sample_beds.R $(bed_dir)/*.bed $(fe_dir)/*.xls
+etc/peaks_binding_all_samples.txt: scripts/concat_sample_beds.py $(bed_dir)/*.bed $(fe_dir)/*.xls
 	# un-merged ChIP-seq intervals from all samples
 	# cols: chr/start/end/length/sample_name/MACS_score/FE_score
-	Rscript $< --bed_directory $(bed_dir) --fe_directory $(fe_dir) --ignore_chr chrM -o $@
+	python $< --bed_directory $(bed_dir) --fe_directory $(fe_dir) --ignore_chr chrM -o $@
 
 etc/peaks_binding_merged_maxMACS.bed: etc/peaks_binding_all_samples.txt
 	# merged ChIP-seq intervals from all samples with MACS score aggregated by max value
