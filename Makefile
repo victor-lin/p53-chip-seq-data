@@ -127,3 +127,8 @@ results/datafiles/ChIP_peaks_master_table_fe.txt: scripts/master_table/pivot_mas
 results/datafiles/ChIP_peaks_master_table_macs.txt: scripts/master_table/pivot_master_table.py etc/ChIP_peaks_master_table_melted.txt
 	# master table MACS scores in sample columns
 	python $< --master_table etc/ChIP_peaks_master_table_melted.txt -o $@ --score macs
+
+.PHONY: clean
+
+clean:
+	rm etc/*
