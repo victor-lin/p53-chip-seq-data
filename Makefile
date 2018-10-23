@@ -10,15 +10,15 @@ dm6_genome_phastcons := $(dm6_dir)/phastCons27way/dm6.27way.phastCons.bed
 # BINDING DATASET VARIABLES/TARGETS
 
 MINSAMPLES := 2
-REP_THRESHOLD_TYPE := max
+REP_CUTOFF_TYPE := max
 REP_CUTOFF := 0.1
-N_NONBINDING_INTERVALS := 20
+N_NONBINDING_INTERVALS_PER_SIDE := 20
 
 TEST_SIZE := 0.5
 
 minsamples_suffix := minsamples_$(MINSAMPLES)
-rep_cutoff_suffix := rep_$(REP_THRESHOLD_TYPE)$(REP_CUTOFF)
-n_nonbinding_suffix := nonbinding_$(N_NONBINDING_INTERVALS)
+rep_cutoff_suffix := rep_$(REP_CUTOFF_TYPE)$(REP_CUTOFF)
+n_nonbinding_suffix := nonbinding_$(N_NONBINDING_INTERVALS_PER_SIDE)
 all_suffixes := $(minsamples_suffix)__$(rep_cutoff_suffix)__$(n_nonbinding_suffix)
 
 peaks_binding_merged_subset := etc/peaks_binding_merged_subset__$(minsamples_suffix)__$(rep_cutoff_suffix).txt
@@ -42,11 +42,11 @@ etc/peaks_binding_merged_maxMACS.bed: etc/peaks_binding_all_samples.txt
 	tail -n+2 $< | sort -k1,1 -k2,2n | bedtools merge -i - -c 5,6 -o count_distinct,max > $@
 
 $(peaks_binding_merged_subset): scripts/binding_dataset/subset_binding_peaks.py etc/peaks_binding_merged_maxMACS.bed
-	# etc/peaks_binding_merged_maxMACS.bed subsetted by # samples and repeat threshold
+	# etc/peaks_binding_merged_maxMACS.bed subsetted by # samples and repeat cutoff
 	# cols: chr/start/end/id/sample_count_distinct/max_MACS_score
 	python $< --merged_bed etc/peaks_binding_merged_maxMACS.bed \
 			  --minsamples $(MINSAMPLES) \
-			  --rep_threshold_type $(REP_THRESHOLD_TYPE) \
+			  --rep_cutoff_type $(REP_CUTOFF_TYPE) \
 			  --rep_cutoff $(REP_CUTOFF) \
 			  --genome_fasta $(dm6_genome_fasta) \
 			  -o $@
@@ -56,9 +56,9 @@ $(peaks_nonbinding): scripts/binding_dataset/generate_nonbinding_peaks.py $(peak
 	# cols: chr/start/end/id/sample_count_distinct/max_MACS_score
 	python $< --binding_peaks $(peaks_binding_merged_subset) \
 			  --genome_fasta $(dm6_genome_fasta) \
-			  --rep_threshold_type $(REP_THRESHOLD_TYPE) \
+			  --rep_cutoff_type $(REP_CUTOFF_TYPE) \
 			  --rep_cutoff $(REP_CUTOFF) \
-			  --num_intervals_per_side $(N_NONBINDING_INTERVALS) \
+			  --num_intervals_per_side $(N_NONBINDING_INTERVALS_PER_SIDE) \
 			  -o $@
 
 $(peaks_all): $(peaks_binding_merged_subset) $(peaks_nonbinding)
