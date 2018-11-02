@@ -1,0 +1,78 @@
+MINSAMPLES := 2
+REP_CUTOFF_TYPE := max
+REP_CUTOFF := 0.1
+N_NONBINDING_INTERVALS_PER_SIDE := 20
+
+TEST_SIZE := 0.5
+
+minsamples_suffix := minsamples_$(MINSAMPLES)
+rep_cutoff_suffix := rep_$(REP_CUTOFF_TYPE)$(REP_CUTOFF)
+n_nonbinding_suffix := nonbinding_$(N_NONBINDING_INTERVALS_PER_SIDE)
+all_suffixes := $(minsamples_suffix)__$(rep_cutoff_suffix)__$(n_nonbinding_suffix)
+
+peaks_binding_merged_subset := etc/peaks_binding_merged_subset__$(minsamples_suffix)__$(rep_cutoff_suffix).txt
+peaks_nonbinding := etc/peaks_nonbinding__$(rep_cutoff_suffix)__$(n_nonbinding_suffix).txt
+peaks_all := etc/peaks_all__$(all_suffixes).txt
+peaks_all_bed := etc/peaks_all__$(all_suffixes).bed
+peaks_all_phastcons_bed := etc/peaks_all_phastcons__$(all_suffixes).bed
+
+datafile_full := results/datafiles/peaks_merged_features__$(all_suffixes).txt
+datafile_train := results/datafiles/peaks_merged_features_train__$(all_suffixes).txt
+datafile_test := results/datafiles/peaks_merged_features_test__$(all_suffixes).txt
+
+etc/peaks_binding_merged_maxMACS.bed: etc/peaks_binding_all_samples.txt
+	# merged ChIP-seq intervals from all samples with MACS score aggregated by max value
+	# cols: chr/start/end/sample_count_distinct/max_MACS_score
+	tail -n+2 $< | sort -k1,1 -k2,2n | bedtools merge -i - -c 5,6 -o count_distinct,max > $@
+
+$(peaks_binding_merged_subset): scripts/binding_dataset/subset_binding_peaks.py etc/peaks_binding_merged_maxMACS.bed
+	# etc/peaks_binding_merged_maxMACS.bed subsetted by # samples and repeat cutoff
+	# cols: chr/start/end/id/sample_count_distinct/max_MACS_score
+	python $< --merged_bed etc/peaks_binding_merged_maxMACS.bed \
+			  --minsamples $(MINSAMPLES) \
+			  --rep_cutoff_type $(REP_CUTOFF_TYPE) \
+			  --rep_cutoff $(REP_CUTOFF) \
+			  --genome_fasta $(dm6_genome_fasta) \
+			  -o $@
+
+$(peaks_nonbinding): scripts/binding_dataset/generate_nonbinding_peaks.py $(peaks_binding_merged_subset)
+	# generated nonbinding peaks with sample_count_distinct, max_MACS_score = 0
+	# cols: chr/start/end/id/sample_count_distinct/max_MACS_score
+	python $< --binding_peaks $(peaks_binding_merged_subset) \
+			  --genome_fasta $(dm6_genome_fasta) \
+			  --rep_cutoff_type $(REP_CUTOFF_TYPE) \
+			  --rep_cutoff $(REP_CUTOFF) \
+			  --num_intervals_per_side $(N_NONBINDING_INTERVALS_PER_SIDE) \
+			  -o $@
+
+$(peaks_all): $(peaks_binding_merged_subset) $(peaks_nonbinding)
+	# all binding+nonbinding peaks (sorted)
+	# cols: chr/start/end/id/sample_count_distinct/max_MACS_score
+	(head -n1 $(peaks_binding_merged_subset); \
+	 ((tail -n+2 $(peaks_binding_merged_subset); \
+	   tail -n+2 $(peaks_nonbinding)) | sort -k1,1 -k2,2n)) > $@
+
+$(peaks_all_bed): $(peaks_all)
+	# peaks_all.txt without header
+	# cols: chr/start/end
+	cut -f1,2,3 $(peaks_all) | tail -n+2 > $@
+
+$(peaks_all_phastcons_bed): $(peaks_all_bed) $(dm6_genome_phastcons)
+	# peaks_all.bed with phastCon score column
+	# cols: chr/start/end/phastCon_score
+	bedmap --echo --delim "\t" --mean $(peaks_all_bed) $(dm6_genome_phastcons) > $@
+
+$(datafile_full): scripts/binding_dataset/peak_features.py $(peaks_all) $(peaks_all_phastcons_bed) $(mast_dir) $(dm6_genome_fasta)
+	# complete datafile with features
+	python $< --peaks_all $(peaks_all) \
+			  --peaks_all_phastcons $(peaks_all_phastcons_bed) \
+			  --mast_dir $(mast_dir) \
+			  --genome_fasta $(dm6_genome_fasta) \
+			  -o $(datafile_full)
+
+train_test_split: scripts/binding_dataset/peak_features_preprocess.py $(datafile_full)
+	# generate train and test set files with automatic filenames
+	python $< --data_file $(datafile_full) \
+			  --test_size $(TEST_SIZE) \
+			  --train_out $(datafile_train) \
+			  --test_out $(datafile_test)

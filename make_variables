@@ -1,0 +1,7 @@
+bed_dir := data/SampleBEDs
+fe_dir := data/FEfiles
+mast_dir := data/MAST
+
+dm6_dir := /ufrc/zhou/share/genomes/dm6
+dm6_genome_fasta := $(dm6_dir)/Sequence/WholeGenomeFasta/genome.fa
+dm6_genome_phastcons := $(dm6_dir)/phastCons27way/dm6.27way.phastCons.bed

@@ -1,0 +1,31 @@
+master_table_fe := results/datafiles/ChIP_peaks_master_table_fe.txt
+master_table_macs := results/datafiles/ChIP_peaks_master_table_macs.txt
+
+etc/peaks_binding_merged.bed: etc/peaks_binding_all_samples.txt
+	# merged ChIP-seq intervals from all samples
+	# cols: chr/start/end
+	tail -n+2 $< | sort -k1,1 -k2,2n | bedtools merge -i - > $@
+
+etc/peaks_binding_merged.anno: etc/peaks_binding_merged.bed
+	# HOMER annotation of peaks_binding_merged.bed
+	annotatePeaks.pl $< dm6 > $@
+
+etc/peaks_binding_merged.fa: etc/peaks_binding_merged.bed
+	# FASTA sequences for peaks_binding_merged.bed
+	homerTools extract $< $(dm6_genome_fasta) -mask -fa > $@
+
+etc/ChIP_peaks_master_table_melted.txt: scripts/master_table/master_table.py etc/peaks_binding_merged.bed etc/peaks_binding_all_samples.txt etc/peaks_binding_merged.fa etc/peaks_binding_merged.anno
+	# master table with one row per sample
+	python $< --merged_file etc/peaks_binding_merged.bed \
+			  --samples_file etc/peaks_binding_all_samples.txt \
+			  --fasta_file etc/peaks_binding_merged.fa \
+			  --anno_file etc/peaks_binding_merged.anno \
+			  -o $@
+
+results/datafiles/ChIP_peaks_master_table_fe.txt: scripts/master_table/pivot_master_table.py etc/ChIP_peaks_master_table_melted.txt
+	# master table FE scores in sample columns
+	python $< --master_table etc/ChIP_peaks_master_table_melted.txt -o $@ --score fe
+
+results/datafiles/ChIP_peaks_master_table_macs.txt: scripts/master_table/pivot_master_table.py etc/ChIP_peaks_master_table_melted.txt
+	# master table MACS scores in sample columns
+	python $< --master_table etc/ChIP_peaks_master_table_melted.txt -o $@ --score macs
